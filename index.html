@@ -62,6 +62,11 @@
             background-color: #30363d;
             align-self: flex-start;
         }
+        /* Estilos para asegurar que el chat siempre esté abajo al cargar */
+        #chatMessages {
+            display: flex;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body class="flex justify-center items-start">
@@ -95,7 +100,7 @@
 
         <!-- Contenedor Dinámico para las Vistas -->
         <div id="appContainer">
-            <!-- Contenido cargado por JavaScript (Auth, Analyze, Community) -->
+            <!-- Mensaje de carga inicial para evitar FOUC -->
             <div class="text-center py-10 text-gray-500" data-key="loading_app">Cargando aplicación...</div>
         </div>
 
@@ -110,10 +115,6 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Log Level (opcional, para depuración)
-        // import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
-        // setLogLevel('Debug'); 
-
         // Variables Globales de Canvas (MANDATORIAS)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -127,16 +128,17 @@
         // ===============================================
         // 2. ESTADO GLOBAL DE LA APLICACIÓN
         // ===============================================
-        let currentView = 'analyze'; // 'auth', 'analyze', 'community'
+        let currentView = 'loading'; // 'loading', 'auth', 'analyze', 'community'
         let userId = null;
         let userName = null;
         let isAuthReady = false;
         let currentLang = 'es'; // Idioma por defecto
         let base64Image = null; // Para la función de análisis
         let communityTab = 'catalog'; // 'catalog', 'chat'
-
+        
         // Vision API Config
-        const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; // Clave de API
+        // NOTA: Esta clave de API es solo para fines de demostración. Debe ser una clave real con acceso a Vision AI.
+        const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
         const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
         
         // ===============================================
@@ -146,6 +148,7 @@
             es: {
                 app_title: "WatchNow",
                 app_subtitle: "Identificación, Comunidad y Catálogo de Relojes",
+                loading_app: "Cargando aplicación...",
                 select_image_prompt: "Toca para seleccionar una imagen clara del reloj",
                 analyze_button: "Analizar Reloj y Buscar",
                 results_title: "Resultados del Análisis",
@@ -173,16 +176,17 @@
                 login_button: "Iniciar Sesión",
                 signup_button: "Crear Cuenta",
                 login_anon_button: "Continuar como Anónimo",
-                error_auth: "Error de autenticación: Credenciales inválidas o cuenta ya existe.",
+                error_auth: "Error de autenticación. Intente de nuevo.",
                 current_user: "Usuario:",
                 user_anon: "Anónimo",
-                error_403: "❌ ¡ERROR 403! Acceso Denegado. La clave de API está restringida. Verifique la restricción de aplicación en Google Cloud (debe ser *.github.io/* o 'Ninguno').",
+                error_403: "❌ ¡ERROR 403! Acceso Denegado. Verifique la clave de API.",
                 catalog_title: "Catálogo de Relojes Comunitario",
                 catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj y agregarlo."
             },
             en: {
                 app_title: "WatchNow",
                 app_subtitle: "Watch Identification, Community & Catalog",
+                loading_app: "Loading application...",
                 select_image_prompt: "Tap to select a clear image of the watch",
                 analyze_button: "Analyze Watch & Search",
                 results_title: "Analysis Results",
@@ -210,10 +214,10 @@
                 login_button: "Sign In",
                 signup_button: "Create Account",
                 login_anon_button: "Continue as Anonymous",
-                error_auth: "Authentication error: Invalid credentials or account already exists.",
+                error_auth: "Authentication error. Please try again.",
                 current_user: "User:",
                 user_anon: "Anonymous",
-                error_403: "❌ ERROR 403! Access Denied. API key is restricted. Check application restriction in Google Cloud (must be *.github.io/* or 'None').",
+                error_403: "❌ ERROR 403! Access Denied. Check API key.",
                 catalog_title: "Community Watch Catalog",
                 catalog_prompt: "Explore the collection or use AI Analysis to identify a watch and add it."
             }
@@ -230,17 +234,15 @@
             updateUI();
         }
         
-        // Cargar idioma guardado
+        // Cargar idioma guardado al inicio
         document.addEventListener('DOMContentLoaded', () => {
             const savedLang = localStorage.getItem('watchnow_lang');
             if (savedLang && translations[savedLang]) {
                 currentLang = savedLang;
             }
-            // Marcador visual de idioma
-            document.querySelectorAll('[data-lang-btn]').forEach(btn => {
-                btn.dataset.active = (btn.getAttribute('data-lang-btn') === currentLang);
-            });
-            updateUI(); // Llamada inicial a updateUI
+            // Llamada inicial a initAuth para comenzar el ciclo de vida de la app
+            initAuth();
+            initializeCatalogData();
         });
 
         // Función para aplicar traducciones a todos los elementos con data-key
@@ -268,31 +270,38 @@
                 }
             } catch (error) {
                 console.error("Firebase Auth Error:", error);
+                // Si falla la inicialización, forzamos la vista de autenticación
+                currentView = 'auth';
+                isAuthReady = true;
+                updateUI();
             }
         }
         
+        // Listener que se dispara cuando cambia el estado de autenticación
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userId = user.uid;
-                userName = user.email ? user.email.split('@')[0] : T('user_anon');
+                // Si el usuario tiene un displayName, lo usa, si no, usa el email o 'Anónimo'
+                userName = user.displayName || (user.email ? user.email.split('@')[0] : T('user_anon'));
                 
-                // Si el usuario acaba de iniciar sesión, lo movemos a la vista de análisis
-                if (!isAuthReady) {
+                // Si estábamos cargando o en auth, vamos a la vista de análisis
+                if (currentView === 'loading' || currentView === 'auth') {
                     currentView = 'analyze'; 
                 }
             } else {
                 userId = null;
                 userName = null;
-                currentView = 'auth';
+                currentView = 'auth'; // Forzar vista de autenticación
             }
-            isAuthReady = true;
+            isAuthReady = true; // El estado de autenticación ya está listo
             updateUI();
         });
         
-        // Funciones de control de Auth
+        // Funciones de control de Auth expuestas globalmente
         window.handleSignIn = async (email, password) => {
             try {
                 await signInWithEmailAndPassword(auth, email, password);
+                document.getElementById('authError').textContent = ''; // Limpiar error
             } catch (error) {
                 document.getElementById('authError').textContent = T('error_auth');
             }
@@ -301,8 +310,9 @@
         window.handleSignUp = async (email, password) => {
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                // Opcional: Establecer un nombre de usuario básico
+                // Establecer un nombre de usuario básico (parte del email)
                 await updateProfile(userCredential.user, { displayName: email.split('@')[0] });
+                document.getElementById('authError').textContent = ''; // Limpiar error
             } catch (error) {
                 document.getElementById('authError').textContent = T('error_auth');
             }
@@ -310,7 +320,6 @@
 
         window.handleSignOut = async () => {
             await signOut(auth);
-            // El onAuthStateChanged se encargará de cambiar la vista a 'auth'
         };
 
         window.handleAnonSignIn = async () => {
@@ -321,22 +330,23 @@
         // 5. LÓGICA DE FIREBASE FIRESTORE (CATÁLOGO Y CHAT)
         // ===============================================
 
-        // RUTAS DE FIREBASE
+        // RUTAS DE FIREBASE (Uso de rutas públicas para la comunidad)
         const CHAT_COLLECTION_PATH = `artifacts/${appId}/public/data/chat_messages`;
         const CATALOG_COLLECTION_PATH = `artifacts/${appId}/public/data/watch_catalog`;
 
         let catalogData = [];
+        let unsubscribeCatalog = null;
+        let unsubscribeChat = null;
 
-        // Inicializa el listener del catálogo
+        // Limpiar y configurar el listener del catálogo
         function setupCatalogListener() {
+            if (unsubscribeCatalog) unsubscribeCatalog(); // Limpiar listener anterior
             if (!userId) return;
 
             const q = collection(db, CATALOG_COLLECTION_PATH);
             
-            // Limitamos a 50 elementos (o el número deseado)
-            onSnapshot(q, (snapshot) => {
+            unsubscribeCatalog = onSnapshot(q, (snapshot) => {
                 catalogData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Solo renderiza si estamos en la vista de comunidad y el tab de catálogo
                 if (currentView === 'community' && communityTab === 'catalog') {
                     renderCatalog();
                 }
@@ -345,21 +355,25 @@
             });
         }
 
-        // Inicializa el listener del chat
+        // Limpiar y configurar el listener del chat
         function setupChatListener() {
+            if (unsubscribeChat) unsubscribeChat(); // Limpiar listener anterior
             if (!userId) return;
 
             const chatContainer = document.getElementById('chatMessages');
-            if (!chatContainer) return; // Si no estamos en la vista de chat, salimos
+            if (!chatContainer) return;
 
+            // Ordenar por timestamp descendente para obtener los más nuevos
             const q = query(collection(db, CHAT_COLLECTION_PATH), orderBy('timestamp', 'desc'));
             
-            onSnapshot(q, (snapshot) => {
-                const messages = snapshot.docs.map(doc => doc.data()).reverse(); // Los más nuevos abajo
+            unsubscribeChat = onSnapshot(q, (snapshot) => {
+                const messages = snapshot.docs.map(doc => doc.data()).reverse(); // Revertir para mostrar los nuevos abajo
                 renderChatMessages(messages);
             }, (error) => {
                 console.error("Error al escuchar el chat:", error);
-                chatContainer.innerHTML = `<p class="text-red-400 p-4">${T('error_auth')}: No se pudo cargar el chat.</p>`;
+                if(document.getElementById('chatMessages')) {
+                    document.getElementById('chatMessages').innerHTML = `<p class="text-red-400 p-4">${T('error_auth')}: No se pudo cargar el chat.</p>`;
+                }
             });
         }
 
@@ -377,11 +391,6 @@
                     userName: userName || T('user_anon')
                 });
                 chatInput.value = '';
-                // Desplazarse al último mensaje después de enviar
-                setTimeout(() => {
-                    const chatMessages = document.getElementById('chatMessages');
-                    if(chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
-                }, 50);
             } catch (e) {
                 console.error("Error al enviar mensaje:", e);
                 displayStatus("Error al enviar el mensaje.", 'text-red-400');
@@ -391,8 +400,7 @@
         // ===============================================
         // 6. LÓGICA DE ANÁLISIS IA (Vision API)
         // ===============================================
-
-        // (Mantengo la lógica de la API de Vision anterior, adaptada a la nueva estructura)
+        
         window.previewImage = function(event) {
             const file = event.target.files[0];
             const inputImage = document.getElementById('inputImage');
@@ -418,7 +426,6 @@
         }
 
         window.analyzeWatch = async function() {
-            // (La misma lógica de llamada a la API Vision que en la versión anterior)
             if (!base64Image) { displayStatus(T('error_upload'), 'text-red-400'); return; }
 
             const analyzeButton = document.getElementById('analyzeButton');
@@ -462,7 +469,6 @@
         }
 
         function processResults(data) {
-            let topLabel = null; 
             let watchData = null;
 
             try {
@@ -470,6 +476,7 @@
                 const webEntities = data.responses[0].webDetection?.webEntities || [];
                 
                 if (webEntities.length > 0) {
+                    // Buscar coincidencia en el catálogo con los nombres de las entidades web
                     for (const entity of webEntities) {
                         const description = entity.description ? entity.description.toLowerCase() : '';
                         watchData = catalogData.find(watch => description.includes(watch.id.toLowerCase()));
@@ -512,7 +519,6 @@
         // ===============================================
         
         window.setView = (view) => {
-            if (view === 'auth' && userId) return; // No ir a auth si ya está logueado
             if ((view === 'analyze' || view === 'community') && !userId) view = 'auth'; // Forzar Auth
             currentView = view;
             updateUI();
@@ -552,10 +558,16 @@
             const mainNav = document.getElementById('mainNav');
             const currentUserDisplay = document.getElementById('currentUserDisplay');
 
-            // 1. Mostrar/Ocultar y actualizar la navegación principal
+            // 1. No hacer nada si todavía estamos cargando el estado de autenticación
+            if (!isAuthReady) {
+                appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
+                return;
+            }
+
+            // 2. Mostrar/Ocultar y actualizar la navegación principal
             if (userId) {
                 mainNav.classList.remove('hidden');
-                currentUserDisplay.textContent = `${T('current_user')} ${userName}`;
+                currentUserDisplay.textContent = `${T('current_user')} ${userName.length > 20 ? userName.substring(0, 17) + '...' : userName}`;
                 
                 // Actualizar el estado activo de la navegación
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -568,12 +580,10 @@
                 currentView = 'auth';
             }
             
-            // 2. Renderizar la vista actual
+            // 3. Renderizar la vista actual
             appContainer.innerHTML = '';
             
-            if (!isAuthReady) {
-                 appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
-            } else if (currentView === 'auth') {
+            if (currentView === 'auth') {
                 appContainer.innerHTML = renderAuthView();
             } else if (currentView === 'analyze') {
                 appContainer.innerHTML = renderAnalyzeView();
@@ -581,20 +591,25 @@
                 appContainer.innerHTML = renderCommunityView();
             }
 
-            // 3. Aplicar traducciones a la vista recién cargada
+            // 4. Aplicar traducciones a la vista recién cargada
             applyTranslations();
             
-            // 4. Inicializar listeners específicos de la vista
+            // 5. Inicializar listeners específicos de la vista
+            // Se limpian y reconfiguran los listeners de Firestore cada vez que se actualiza la UI para asegurar la reactividad
             if (currentView === 'community') {
+                setupCatalogListener();
                 if (communityTab === 'chat') {
                     setupChatListener();
                 } else if (communityTab === 'catalog') {
-                    setupCatalogListener();
-                    renderCatalog(); // Llamar una vez para la primera carga
+                    renderCatalog();
                 }
+            } else {
+                // Limpiar listeners si salimos de la vista de comunidad
+                if (unsubscribeCatalog) { unsubscribeCatalog(); unsubscribeCatalog = null; }
+                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
             }
             
-            // 5. Actualizar el marcador de idioma
+            // 6. Actualizar el marcador de idioma
             document.querySelectorAll('[data-lang-btn]').forEach(btn => {
                 btn.dataset.active = (btn.getAttribute('data-lang-btn') === currentLang);
             });
@@ -605,8 +620,6 @@
         // ===============================================
 
         function renderAuthView() {
-            // Importante: No se usa onsubmit() para prevenir la recarga de la página,
-            // se usa un click event para manejar la autenticación.
             return `
                 <div class="card p-8 rounded-xl max-w-sm mx-auto">
                     <h2 class="text-xl font-bold text-center mb-6" data-key="login_title">Ingresar a WatchNow</h2>
@@ -630,7 +643,6 @@
                 </div>
             `;
         }
-
 
         function renderAnalyzeView() {
             return `
@@ -708,7 +720,6 @@
         }
         
         function renderCatalogTemplate() {
-             // El contenido de la lista se llena en la función renderCatalog()
             return `
                 <h2 class="text-xl font-bold mb-4" data-key="catalog_title">Catálogo de Relojes Comunitario</h2>
                 <p class="text-gray-400 text-sm mb-4" data-key="catalog_prompt">Explora la colección o usa el Análisis IA para identificar un reloj.</p>
@@ -716,7 +727,6 @@
                     <!-- Los relojes del Catálogo se renderizarán aquí -->
                     <p class="text-gray-500 text-center">Cargando catálogo...</p>
                 </div>
-                <!-- Funcionalidad de agregar (simplificada) -->
             `;
         }
         
@@ -764,8 +774,12 @@
             const chatContainer = document.getElementById('chatMessages');
             if (!chatContainer) return;
 
+            // Guardar si el scroll está cerca del fondo antes de renderizar
+            const shouldScroll = chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 50; 
+
             chatContainer.innerHTML = messages.map(msg => {
                 const isUser = msg.userId === userId;
+                // Formatear el timestamp (si existe)
                 const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString(currentLang) : '...';
                 
                 return `
@@ -779,8 +793,10 @@
                 `;
             }).join('');
             
-            // Asegurarse de que el scroll esté abajo
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Solo desplazarse al último mensaje si el usuario ya estaba abajo
+            if (shouldScroll) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
         }
 
 
@@ -814,9 +830,8 @@
             }
         }
         
-        // Ejecución inicial
-        initAuth();
-        initializeCatalogData(); // Pre-poblar el catálogo
+        // La inicialización de la lógica (initAuth y initializeCatalogData) ahora se llama 
+        // desde document.addEventListener('DOMContentLoaded', ...) para asegurar que el DOM esté listo.
     </script>
 </body>
 </html>
