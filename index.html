@@ -37,7 +37,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        /* ... otros estilos se mantienen ... */
         .tab-active {
             border-bottom: 2px solid #238636;
             color: #238636;
@@ -110,15 +109,8 @@
             auth = getAuth(app);
         } catch (error) {
             console.error("Fallo crítico al inicializar Firebase:", error);
-            // Si falla la inicialización, forzamos la vista de error
-            document.getElementById('appContainer').innerHTML = `
-                <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
-                    <h2 class="text-xl font-bold text-red-400 mb-2">Error de Configuración Crítico</h2>
-                    <p class="text-sm text-red-300">La aplicación no pudo inicializar Firebase. Revise si el archivo '__firebase_config' es válido.</p>
-                    <p class="text-xs text-red-200 mt-2">${error.message}</p>
-                </div>
-            `;
-            throw error; // Detener la ejecución del script
+            document.getElementById('appContainer').innerHTML = renderCriticalError(error.message);
+            throw error;
         }
         
         // ===============================================
@@ -127,12 +119,12 @@
         let currentView = 'loading'; // 'loading', 'auth', 'analyze', 'community'
         let userId = null;
         let userName = null;
-        let isAuthReady = false;
+        let isAuthReady = false; // Bandera para saber si el chequeo inicial de Auth ha terminado
         let currentLang = 'es'; // Idioma por defecto
         let base64Image = null; // Para la función de análisis
         let communityTab = 'catalog'; // 'catalog', 'chat'
         
-        // Vision API Config (DEBE SER UNA CLAVE VÁLIDA CON ACCESO A VISION AI)
+        // API de Vision AI (Debe ser una clave con acceso a Vision AI)
         const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
         const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
         
@@ -144,7 +136,6 @@
                 app_title: "WatchNow",
                 app_subtitle: "Identificación, Comunidad y Catálogo de Relojes",
                 loading_app: "Cargando aplicación...",
-                // ... (otras traducciones se mantienen igual)
                 error_auth_fail: "Error Crítico de Autenticación. Por favor, revise la Consola (F12) o inténtelo de nuevo. Esto puede indicar un problema con la clave de seguridad inicial.",
                 user_anon: "Anónimo",
                 error_403: "❌ ¡ERROR 403! Acceso Denegado. Verifique la clave de API.",
@@ -159,17 +150,63 @@
                 current_user: "Usuario:",
                 tab_catalog: "Catálogo",
                 tab_chat: "Chat Comunitario",
-                // ... (el resto de traducciones se omiten por brevedad)
+                login_title: "Ingresar a WatchNow",
+                login_email: "Correo Electrónico",
+                login_password: "Contraseña",
+                login_button: "Iniciar Sesión",
+                signup_button: "Crear Cuenta",
+                login_anon_button: "Continuar como Anónimo",
+                select_image_prompt: "Toca para seleccionar una imagen clara del reloj",
+                analyze_button: "Analizar Reloj y Buscar",
+                results_title: "Resultados del Análisis",
+                ident_ia: "Identificación IA:",
+                model_estimated: "Modelo Estimado (Catálogo):",
+                caliber: "Calibre / Movimiento:",
+                price_range: "Precio Estimado (Rango USD):",
+                history_summary: "Resumen Histórico:",
+                catalog_title: "Catálogo de Relojes Comunitario",
+                catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj.",
+                chat_title: "Chat de Coleccionistas",
+                chat_placeholder: "Escribe un mensaje...",
+                send_button: "Enviar",
             },
             en: {
-                // ... (traducciones en inglés se omiten por brevedad)
+                app_title: "WatchNow",
+                app_subtitle: "Watch Identification, Community, and Catalog",
                 loading_app: "Loading application...",
                 error_auth_fail: "Critical Authentication Error. Please check the Console (F12) or try again. This might indicate an issue with the initial security token.",
                 user_anon: "Anonymous",
+                error_403: "❌ ERROR 403! Access Denied. Check API key.",
                 nav_analyze: "AI Analysis",
                 nav_community: "Community/Market",
                 nav_signout: "Sign Out",
-                error_403: "❌ ERROR 403! Access Denied. Check API key.",
+                error_upload: "Error: Select a valid image file.",
+                status_loaded: "Image loaded. Ready to analyze.",
+                status_analyzing: "Analyzing...",
+                status_complete: "Analysis complete. Results found.",
+                error_auth: "Authentication error. Try again.",
+                current_user: "User:",
+                tab_catalog: "Catalog",
+                tab_chat: "Community Chat",
+                login_title: "Sign in to WatchNow",
+                login_email: "Email",
+                login_password: "Password",
+                login_button: "Sign In",
+                signup_button: "Sign Up",
+                login_anon_button: "Continue Anonymously",
+                select_image_prompt: "Tap to select a clear watch image",
+                analyze_button: "Analyze Watch & Search",
+                results_title: "Analysis Results",
+                ident_ia: "AI Identification:",
+                model_estimated: "Estimated Model (Catalog):",
+                caliber: "Caliber / Movement:",
+                price_range: "Estimated Price (USD Range):",
+                history_summary: "Historical Summary:",
+                catalog_title: "Community Watch Catalog",
+                catalog_prompt: "Explore the collection or use AI Analysis to identify a watch.",
+                chat_title: "Collectors Chat",
+                chat_placeholder: "Type a message...",
+                send_button: "Send",
             }
         };
 
@@ -188,7 +225,7 @@
             if (savedLang && translations[savedLang]) {
                 currentLang = savedLang;
             }
-            initAuth();
+            // NO llamamos a initAuth aquí, dejamos que onAuthStateChanged lo maneje
         });
 
         function applyTranslations() {
@@ -204,34 +241,28 @@
         // 4. LÓGICA DE AUTENTICACIÓN
         // ===============================================
 
-        async function initAuth() {
+        async function attemptSignIn() {
             try {
                 if (initialAuthToken) {
-                    // Intento de inicio de sesión con el token de seguridad
                     await signInWithCustomToken(auth, initialAuthToken);
                     console.log("Autenticación exitosa con token personalizado.");
                 } else {
-                    // Si no hay token, inicio de sesión anónimo
                     await signInAnonymously(auth);
                     console.log("Autenticación exitosa anónima.");
                 }
             } catch (error) {
-                console.error("ERROR CRÍTICO: Fallo al intentar iniciar sesión con Firebase Auth. Esto bloquea la app.", error);
-                
-                // Mostrar error visible en pantalla
-                document.getElementById('appContainer').innerHTML = `
-                    <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
-                        <h2 class="text-xl font-bold text-red-400 mb-2">Error de Autenticación</h2>
-                        <p class="text-sm text-red-300" data-key="error_auth_fail">${T('error_auth_fail')}</p>
-                        <p class="text-xs text-red-200 mt-2">Mensaje del error: ${error.message}</p>
-                    </div>
-                `;
-                isAuthReady = true;
-                updateUI();
+                console.error("ERROR CRÍTICO: Fallo al intentar iniciar sesión con Firebase Auth.", error);
+                // No actualizamos la UI aquí, dejamos que onAuthStateChanged lo capture
             }
         }
         
         onAuthStateChanged(auth, (user) => {
+            if (!isAuthReady) {
+                // PRIMER CHECKEO: Intentar iniciar sesión si aún no lo hemos hecho
+                isAuthReady = true; 
+                attemptSignIn();
+            }
+
             if (user) {
                 userId = user.uid;
                 userName = user.displayName || (user.email ? user.email.split('@')[0] : T('user_anon'));
@@ -246,14 +277,17 @@
                 userName = null;
                 currentView = 'auth';
             }
+            updateUI(); // Llamar a updateUI cuando el estado de auth cambia
+        }, (error) => {
+            // Manejar errores de onAuthStateChanged (raro, pero posible)
             isAuthReady = true;
+            document.getElementById('appContainer').innerHTML = renderCriticalError(error.message);
             updateUI();
         });
         
         window.handleSignOut = async () => { await signOut(auth); };
         window.handleAnonSignIn = async () => { await signInAnonymously(auth); };
         
-        // ... (El resto de funciones de autenticación (handleSignIn, handleSignUp) se mantienen igual) ...
         window.handleSignIn = async (email, password) => {
             try {
                 await signInWithEmailAndPassword(auth, email, password);
@@ -307,10 +341,13 @@
             const chatContainer = document.getElementById('chatMessages');
             if (!chatContainer) return;
 
-            const q = query(collection(db, CHAT_COLLECTION_PATH), orderBy('timestamp', 'desc'));
+            // Eliminamos orderBy para evitar problemas de índice, y ordenamos en memoria
+            const q = collection(db, CHAT_COLLECTION_PATH);
             
             unsubscribeChat = onSnapshot(q, (snapshot) => {
-                const messages = snapshot.docs.map(doc => doc.data()).reverse();
+                let messages = snapshot.docs.map(doc => doc.data());
+                // Ordenar en memoria por timestamp (descendente para el chat, si es posible)
+                messages.sort((a, b) => (a.timestamp && b.timestamp) ? a.timestamp.seconds - b.timestamp.seconds : 0);
                 renderChatMessages(messages);
             }, (error) => {
                 console.error("Error al escuchar el chat (Reglas de Seguridad):", error);
@@ -340,7 +377,7 @@
             }
         };
         
-        // ... (El resto de la lógica de análisis IA se mantiene igual) ...
+        // ... (El resto de la lógica de Análisis IA se mantiene igual) ...
         window.previewImage = function(event) {
             const file = event.target.files[0];
             const inputImage = document.getElementById('inputImage');
@@ -450,7 +487,7 @@
             }
         }
         
-        // ... (El resto de la lógica de Rendering y Templates se mantiene igual) ...
+        // ... (El resto de la lógica de Rendering y Templates) ...
         window.setView = (view) => {
             if ((view === 'analyze' || view === 'community') && !userId) view = 'auth';
             currentView = view;
@@ -486,15 +523,30 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
+        function renderCriticalError(message) {
+             return `
+                <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
+                    <h2 class="text-xl font-bold text-red-400 mb-2">Error de Autenticación Crítico</h2>
+                    <p class="text-sm text-red-300" data-key="error_auth_fail">${T('error_auth_fail')}</p>
+                    <p class="text-xs text-red-200 mt-2">Mensaje del error: ${message}</p>
+                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Necesitas revisar los logs de Firebase en la Consola (F12) y revisar tus Reglas de Seguridad.**</p>
+                </div>
+            `;
+        }
+
         function updateUI() {
             const appContainer = document.getElementById('appContainer');
             const mainNav = document.getElementById('mainNav');
             const currentUserDisplay = document.getElementById('currentUserDisplay');
 
-            if (!isAuthReady) {
+            if (!isAuthReady || currentView === 'loading') {
+                // Si la autenticación aún está pendiente, mostramos el cargando
                 appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
                 return;
             }
+            
+            // Si hay un error crítico (ya renderizado por renderCriticalError), no hacemos nada más
+            if (appContainer.innerHTML.includes("Error de Autenticación Crítico")) return;
 
             if (userId) {
                 mainNav.classList.remove('hidden');
@@ -679,7 +731,7 @@
             
             catalogList.innerHTML = catalogData.map(watch => `
                 <div class="flex items-start space-x-4 p-3 border border-gray-700 rounded-lg hover:bg-[#1f242c] transition duration-150">
-                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/161b22/8b949e?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover" alt="Reloj ${watch.name}">
+                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/0d1117/30363d?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover" alt="Reloj ${watch.name}">
                     <div class="flex-grow">
                         <h3 class="text-lg font-semibold text-green-400">${watch.name} (${watch.id.toUpperCase()})</h3>
                         <p class="text-sm text-gray-300">Calibre: ${watch.caliber}</p>
@@ -702,9 +754,9 @@
                 
                 return `
                     <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md message-bubble-${isUser ? 'user' : 'other'}">
+                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md ${isUser ? 'bg-green-700' : 'bg-[#2d333b]'}">
                             <div class="text-xs font-bold ${isUser ? 'text-gray-900' : 'text-green-400'} mb-1">${msg.userName}</div>
-                            <p class="text-sm ${isUser ? 'text-white' : 'text-gray-200'}">${msg.text}</p>
+                            <p class="text-sm text-white">${msg.text}</p>
                             <div class="text-right text-xs mt-1 ${isUser ? 'text-gray-300' : 'text-gray-400'}">${time}</div>
                         </div>
                     </div>
