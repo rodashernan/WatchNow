@@ -207,6 +207,21 @@
                     body: JSON.stringify(payload)
                 });
 
+                if (response.status === 400) {
+                    // Posiblemente error de clave de API o formato JSON.
+                    const errorData = await response.json();
+                    const errorMessage = errorData.error?.message || "Error desconocido de la API.";
+                    
+                    if (errorMessage.includes("API key not valid")) {
+                        displayStatus("Error Crítico: Clave de API Inválida. Reemplace la clave en el código.", 'text-red-500 font-bold');
+                    } else if (errorMessage.includes("API has not been used in project")) {
+                        displayStatus("Error Crítico: Vision API No Activada. Active el servicio en Google Cloud.", 'text-red-500 font-bold');
+                    } else {
+                        displayStatus(`Error HTTP 400. Consulte la Consola (F12) para más detalles. Mensaje: ${errorMessage}`, 'text-red-400');
+                    }
+                    throw new Error(`Error HTTP 400: ${errorMessage}`);
+                }
+                
                 if (!response.ok) {
                     throw new Error(`Error HTTP: ${response.status}`);
                 }
@@ -218,7 +233,10 @@
 
             } catch (error) {
                 console.error("Error en la llamada a la API:", error);
-                displayStatus(`Error en el análisis de IA. Verifique la clave de API o la conexión. (${error.message})`, 'text-red-400');
+                // Si ya se manejó el 400, solo actualiza la UI.
+                if (!error.message.includes("Error HTTP 400")) {
+                    displayStatus(`Error en la conexión o análisis de IA. Verifique la red y la Consola. (${error.message})`, 'text-red-400');
+                }
                 updateUIForError();
             }
         }
@@ -300,7 +318,7 @@
             analyzeButton.disabled = false;
             buttonText.textContent = "Analizar y Buscar Historia";
             spinner.classList.add('hidden');
-            resultsSection.classList.add('hidden');
+            // No ocultar resultsSection si el error es solo por la clave API (para dejar visible el mensaje de error crítico)
         }
 
         function updateUIForSuccess() {
