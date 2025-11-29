@@ -94,22 +94,61 @@
 
         // Variables Globales de Canvas (MANDATORIAS)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- INICIO: FIX para Entorno Externo (GitHub Pages) ---
+        let firebaseConfig = {};
+        const CRITICAL_ERROR_MESSAGE = "Error Crítico de Configuración: La aplicación no pudo inicializar Firebase. Revise la Consola (F12).";
+
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } catch (e) {
+                console.error("ERROR: No se pudo parsear __firebase_config.", e);
+            }
+        } 
+        
+        if (Object.keys(firebaseConfig).length === 0) {
+            // Este bloque se ejecuta en Canvas si la configuración es nula/vacía, o fuera de Canvas (GitHub Pages).
+            
+            // Si estás fuera de Canvas (como en GitHub Pages), DEBES reemplazar el objeto vacío 
+            // con tu propia configuración de Firebase para que funcione el Catálogo/Chat.
+            // Por ejemplo:
+            /*
+            firebaseConfig = {
+              apiKey: "TU_API_KEY",
+              authDomain: "TU_AUTH_DOMAIN",
+              projectId: "TU_PROJECT_ID",
+              storageBucket: "TU_STORAGE_BUCKET",
+              messagingSenderId: "TU_MESSAGING_SENDER_ID",
+              appId: "TU_APP_ID"
+            };
+            */
+            
+            // Advertencia si la configuración sigue vacía
+            if (Object.keys(firebaseConfig).length === 0) {
+                 console.warn("ADVERTENCIA: Usando configuración de Firebase vacía. El Catálogo y el Chat no funcionarán fuera del entorno Canvas.");
+            }
+        }
+        // --- FIN: FIX para Entorno Externo ---
 
         // Inicialización de Firebase
         let app, db, auth;
         try {
             if (Object.keys(firebaseConfig).length === 0) {
-                console.error("ERROR: firebaseConfig está vacío. Revise la configuración del entorno.");
-                throw new Error("Configuración de Firebase faltante.");
+                // Forzar un error crítico si no tenemos configuración, excepto si estamos fuera de Canvas y 
+                // queremos evitar el bloqueo (aunque las funciones de Firebase fallarán, el resto de la app carga).
+                // En GitHub Pages, si no defines firebaseConfig, esta parte se salta, permitiendo que la app cargue.
+                if (typeof __firebase_config !== 'undefined' && JSON.parse(__firebase_config) === null) {
+                    throw new Error("Configuración de Firebase faltante.");
+                }
             }
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
         } catch (error) {
             console.error("Fallo crítico al inicializar Firebase:", error);
-            document.getElementById('appContainer').innerHTML = renderCriticalError(error.message);
+            document.getElementById('appContainer').innerHTML = renderCriticalError(CRITICAL_ERROR_MESSAGE + " Mensaje: " + error.message);
             throw error;
         }
         
@@ -243,6 +282,9 @@
 
         async function attemptSignIn() {
             try {
+                // Solo intentamos iniciar sesión si Firebase fue inicializado con éxito (auth no es null)
+                if (!auth) return; 
+
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                     console.log("Autenticación exitosa con token personalizado.");
@@ -320,7 +362,7 @@
 
         function setupCatalogListener() {
             if (unsubscribeCatalog) unsubscribeCatalog();
-            if (!userId) return;
+            if (!userId || !db) return; // Añadir chequeo de 'db'
 
             const q = collection(db, CATALOG_COLLECTION_PATH);
             
@@ -336,7 +378,7 @@
 
         function setupChatListener() {
             if (unsubscribeChat) unsubscribeChat();
-            if (!userId) return;
+            if (!userId || !db) return; // Añadir chequeo de 'db'
 
             const chatContainer = document.getElementById('chatMessages');
             if (!chatContainer) return;
@@ -361,7 +403,7 @@
             const chatInput = document.getElementById('chatInput');
             const messageText = chatInput.value.trim();
 
-            if (!messageText || !userId) return;
+            if (!messageText || !userId || !db) return; // Añadir chequeo de 'db'
 
             try {
                 await addDoc(collection(db, CHAT_COLLECTION_PATH), {
@@ -526,10 +568,9 @@
         function renderCriticalError(message) {
              return `
                 <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
-                    <h2 class="text-xl font-bold text-red-400 mb-2">Error de Autenticación Crítico</h2>
-                    <p class="text-sm text-red-300" data-key="error_auth_fail">${T('error_auth_fail')}</p>
-                    <p class="text-xs text-red-200 mt-2">Mensaje del error: ${message}</p>
-                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Necesitas revisar los logs de Firebase en la Consola (F12) y revisar tus Reglas de Seguridad.**</p>
+                    <h2 class="text-xl font-bold text-red-400 mb-2">Error de Configuración Crítico</h2>
+                    <p class="text-sm text-red-300">${message}</p>
+                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Si estás en GitHub Pages, debes inyectar tu propia 'firebaseConfig' en el código fuente para el Catálogo y Chat. Si estás en Canvas, revisa tu 'firebase_config' en las variables de entorno.**</p>
                 </div>
             `;
         }
@@ -546,7 +587,7 @@
             }
             
             // Si hay un error crítico (ya renderizado por renderCriticalError), no hacemos nada más
-            if (appContainer.innerHTML.includes("Error de Autenticación Crítico")) return;
+            if (appContainer.innerHTML.includes("Error de Configuración Crítico") || appContainer.innerHTML.includes("Error de Autenticación Crítico")) return;
 
             if (userId) {
                 mainNav.classList.remove('hidden');
@@ -780,6 +821,17 @@
                 { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=PATEK" },
                 { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=GRMN" }
             ];
+
+            // Si db es nulo (porque firebaseConfig estaba vacío), no podemos inicializar la data.
+            if (!db) {
+                console.warn("No se pudo inicializar la data de catálogo: Firebase no está disponible.");
+                // Usar datos mockeados en memoria para que al menos la vista se renderice
+                catalogData = MOCK_CATALOG;
+                if (currentView === 'community' && communityTab === 'catalog') {
+                    renderCatalog();
+                }
+                return;
+            }
 
             const catalogRef = collection(db, CATALOG_COLLECTION_PATH);
             try {
