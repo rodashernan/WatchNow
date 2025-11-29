@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchNow - Identificación de Relojes con IA</title>
-    <!-- Carga de Tailwind CSS (para estilos modernos y responsivos) -->
+    <title>WatchNow - Plataforma de Coleccionistas</title>
+    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Fuente principal Inter */
@@ -14,7 +14,7 @@
             background-color: #0d1117; /* Fondo oscuro tipo GitHub */
         }
         .container-app {
-            max-width: 500px;
+            max-width: 600px;
             min-height: 100vh;
             padding: 1.5rem;
         }
@@ -37,7 +37,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        /* Estilos específicos para la imagen de entrada */
         #inputImage {
             max-height: 300px;
             object-fit: contain;
@@ -47,9 +46,21 @@
             border: 2px dashed #30363d;
             padding: 10px;
         }
-        /* Ocultar el input de archivo */
         #fileInput {
             display: none;
+        }
+        .tab-active {
+            border-bottom: 2px solid #238636;
+            color: #238636;
+        }
+        .message-bubble-user {
+            background-color: #238636;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .message-bubble-other {
+            background-color: #30363d;
+            align-self: flex-start;
         }
     </style>
 </head>
@@ -59,105 +70,338 @@
         
         <!-- Encabezado de la Aplicación -->
         <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-[#238636]">WatchNow</h1>
-            <p class="text-gray-400">Identificación y Valoración de Relojes con IA</p>
+            <h1 class="text-3xl font-bold text-[#238636]" data-key="app_title">WatchNow</h1>
+            <p class="text-gray-400 text-sm" data-key="app_subtitle">Identificación, Comunidad y Catálogo de Relojes</p>
+
+            <!-- Selector de Idioma -->
+            <div class="mt-2 flex justify-center space-x-2 text-sm">
+                <button onclick="setLanguage('es')" class="text-gray-400 hover:text-white transition duration-150 border-b border-transparent data-[active=true]:border-white" data-lang-btn="es">Español</button>
+                <span class="text-gray-600">|</span>
+                <button onclick="setLanguage('en')" class="text-gray-400 hover:text-white transition duration-150 border-b border-transparent data-[active=true]:border-white" data-lang-btn="en">English</button>
+            </div>
+            
+            <!-- Barra de Navegación principal (Visible solo si está autenticado) -->
+            <nav id="mainNav" class="flex justify-between items-center mt-4 card p-3 rounded-lg text-sm hidden">
+                <div class="flex space-x-4">
+                    <button onclick="setView('analyze')" id="navAnalyze" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_analyze">Análisis IA</button>
+                    <button onclick="setView('community')" id="navCommunity" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_community">Comunidad</button>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="currentUserDisplay" class="text-gray-400 italic text-xs"></span>
+                    <button onclick="handleSignOut()" class="text-red-400 hover:text-red-500 font-semibold" data-key="nav_signout">Cerrar Sesión</button>
+                </div>
+            </nav>
         </header>
 
-        <!-- Contenedor Principal (Card) -->
-        <div class="card p-6 rounded-xl">
-
-            <!-- 1. Carga de Imagen -->
-            <section id="upload-section" class="mb-6">
-                <label for="fileInput" class="block text-center cursor-pointer p-4 border-2 border-dashed border-gray-600 rounded-lg hover:border-gray-500 transition duration-150">
-                    <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 18m-4-12v6m0 0l-3-3m3 3l3-3"/>
-                    </svg>
-                    <p class="mt-2 text-sm text-gray-300">Toca para seleccionar una imagen clara del reloj</p>
-                </label>
-                <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
-                <img id="inputImage" class="hidden mx-auto" alt="Imagen de Reloj a analizar">
-            </section>
-
-            <!-- 2. Botón de Acción -->
-            <button id="analyzeButton" onclick="analyzeWatch()" class="w-full btn-primary text-white font-semibold py-3 rounded-lg flex items-center justify-center transition duration-150" disabled>
-                <span id="buttonText">Analizar y Buscar Historia</span>
-                <div id="spinner" class="spinner w-5 h-5 border-2 border-t-white rounded-full ml-3 hidden"></div>
-            </button>
-
-            <!-- 3. Mensaje de Estado / Error -->
-            <p id="statusMessage" class="mt-4 text-center text-sm text-gray-400 hidden"></p>
+        <!-- Contenedor Dinámico para las Vistas -->
+        <div id="appContainer">
+            <!-- Contenido cargado por JavaScript (Auth, Analyze, Community) -->
+            <div class="text-center py-10 text-gray-500" data-key="loading_app">Cargando aplicación...</div>
         </div>
-
-        <!-- 4. Sección de Resultados -->
-        <section id="resultsSection" class="mt-8 card p-6 rounded-xl hidden">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2">Resultados del Análisis</h2>
-            
-            <div class="space-y-4">
-                <!-- Resultado de la IA (Identificación) -->
-                <div class="result-item">
-                    <p class="text-gray-400 text-sm">Identificación IA:</p>
-                    <p id="watchName" class="text-lg font-semibold text-green-400">Cargando...</p>
-                </div>
-
-                <!-- Detalles de la Base de Datos (Historia/Calibre) -->
-                <div class="result-item border-t border-gray-800 pt-4">
-                    <p class="text-gray-400 text-sm">Modelo Estimado (Base de Datos):</p>
-                    <p id="modelName" class="text-base font-medium">--</p>
-                </div>
-                <div class="result-item">
-                    <p class="text-gray-400 text-sm">Calibre / Movimiento:</p>
-                    <p id="caliber" class="text-base font-medium">--</p>
-                </div>
-                <div class="result-item">
-                    <p class="text-gray-400 text-sm">Precio Estimado (Rango USD):</p>
-                    <p id="priceRange" class="text-base font-medium text-yellow-400">--</p>
-                </div>
-            </div>
-
-            <div class="result-item border-t border-gray-800 pt-4 mt-4">
-                <p class="text-gray-400 text-sm">Resumen Histórico:</p>
-                <p id="historySummary" class="text-sm leading-relaxed text-gray-300">--</p>
-            </div>
-        </section>
 
     </div>
 
-    <!-- Script de Firebase (para futura base de datos) y Lógica de IA -->
-    <script>
-        // ⚠️ CLAVE DE API ACTUALIZADA POR SOLICITUD DEL USUARIO.
-        const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
-        const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
-
-        const fileInput = document.getElementById('fileInput');
-        const inputImage = document.getElementById('inputImage');
-        const analyzeButton = document.getElementById('analyzeButton');
-        const spinner = document.getElementById('spinner');
-        const buttonText = document.getElementById('buttonText');
-        const statusMessage = document.getElementById('statusMessage');
-        const resultsSection = document.getElementById('resultsSection');
+    <!-- MÓDULOS Y LÓGICA PRINCIPAL DE JAVASCRIPT -->
+    <script type="module">
+        // ===============================================
+        // 1. CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
+        // ===============================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, setDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        let base64Image = null;
+        // Log Level (opcional, para depuración)
+        // import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
+        // setLogLevel('Debug'); 
 
-        // Base de datos de ejemplo (simulando datos de modelos populares)
-        const WATCH_DATABASE = [
-            { id: "rolex submariner", name: "Rolex Submariner Date", caliber: "Calibre 3235", price: "USD 12,000 - 18,000", history: "Lanzado en 1953, fue el primer reloj de buceo resistente al agua hasta 100 metros. Es un ícono de durabilidad y diseño, popularizado por exploradores y James Bond." },
-            { id: "rolex daytona", name: "Rolex Cosmograph Daytona", caliber: "Calibre 4130", price: "USD 25,000 - 45,000", history: "Diseñado en 1963 para pilotos de carreras de resistencia. Es famoso por su escala taquimétrica y por ser el reloj de Paul Newman. Su disponibilidad limitada lo hace extremadamente valioso." },
-            { id: "omega speedmaster", name: "Omega Speedmaster Professional", caliber: "Calibre 1861/3861 (Manual)", price: "USD 5,500 - 8,000", history: "Conocido como el 'Moonwatch' por ser el reloj oficial usado por los astronautas de la NASA en la Luna. Es uno de los cronógrafos más probados y fiables de la historia." },
-            { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo." },
-            { id: "tag heuer carrera", name: "TAG Heuer Carrera Chronograph", caliber: "Calibre 16/Heuer 02", price: "USD 3,000 - 6,500", history: "Creado por Jack Heuer en 1963, en honor a la peligrosa carrera automovilística 'Carrera Panamericana'. Es sinónimo de deporte motor y legibilidad." },
-            { id: "reloj", name: "Reloj Genérico", caliber: "Movimiento Desconocido", price: "USD 50 - 500", history: "La IA identificó solo un 'reloj'. No hay suficiente detalle para identificar la marca. Intente subir una imagen más clara y de primer plano del cuadrante." },
-            { id: "brazalete", name: "Pulsera/Brazalete", caliber: "N/A", price: "N/A", history: "La IA identificó una pulsera o brazalete en lugar de un reloj completo. Asegúrese de que el reloj esté centrado en la toma." },
-        ];
+        // Variables Globales de Canvas (MANDATORIAS)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+        // Inicialización de Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // ===============================================
+        // 2. ESTADO GLOBAL DE LA APLICACIÓN
+        // ===============================================
+        let currentView = 'analyze'; // 'auth', 'analyze', 'community'
+        let userId = null;
+        let userName = null;
+        let isAuthReady = false;
+        let currentLang = 'es'; // Idioma por defecto
+        let base64Image = null; // Para la función de análisis
+        let communityTab = 'catalog'; // 'catalog', 'chat'
 
-        // 1. Previsualiza la imagen y convierte a Base64
-        function previewImage(event) {
+        // Vision API Config
+        const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; // Clave de API
+        const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
+        
+        // ===============================================
+        // 3. i18n: TRADUCCIONES
+        // ===============================================
+        const translations = {
+            es: {
+                app_title: "WatchNow",
+                app_subtitle: "Identificación, Comunidad y Catálogo de Relojes",
+                select_image_prompt: "Toca para seleccionar una imagen clara del reloj",
+                analyze_button: "Analizar Reloj y Buscar",
+                results_title: "Resultados del Análisis",
+                ident_ia: "Identificación IA:",
+                model_estimated: "Modelo Estimado (Catálogo):",
+                caliber: "Calibre / Movimiento:",
+                price_range: "Precio Estimado (Rango USD):",
+                history_summary: "Resumen Histórico/Detalles:",
+                error_upload: "Error: Seleccione un archivo de imagen válido.",
+                status_loaded: "Imagen cargada. Lista para analizar.",
+                status_analyzing: "Analizando...",
+                status_complete: "Análisis completado. Resultados encontrados.",
+                nav_analyze: "Análisis IA",
+                nav_community: "Comunidad/Mercado",
+                nav_signout: "Cerrar Sesión",
+                nav_signin: "Iniciar Sesión",
+                tab_catalog: "Catálogo",
+                tab_chat: "Chat Comunitario",
+                chat_title: "Chat de Coleccionistas (Venta/Cambio)",
+                chat_placeholder: "Escribe tu mensaje (y propón ventas o cambios)...",
+                send_button: "Enviar",
+                login_title: "Ingresar a WatchNow",
+                login_email: "Correo Electrónico",
+                login_password: "Contraseña",
+                login_button: "Iniciar Sesión",
+                signup_button: "Crear Cuenta",
+                login_anon_button: "Continuar como Anónimo",
+                error_auth: "Error de autenticación: Credenciales inválidas o cuenta ya existe.",
+                current_user: "Usuario:",
+                user_anon: "Anónimo",
+                error_403: "❌ ¡ERROR 403! Acceso Denegado. La clave de API está restringida. Verifique la restricción de aplicación en Google Cloud (debe ser *.github.io/* o 'Ninguno').",
+                catalog_title: "Catálogo de Relojes Comunitario",
+                catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj y agregarlo."
+            },
+            en: {
+                app_title: "WatchNow",
+                app_subtitle: "Watch Identification, Community & Catalog",
+                select_image_prompt: "Tap to select a clear image of the watch",
+                analyze_button: "Analyze Watch & Search",
+                results_title: "Analysis Results",
+                ident_ia: "AI Identification:",
+                model_estimated: "Estimated Model (Catalog):",
+                caliber: "Caliber / Movement:",
+                price_range: "Estimated Price (USD Range):",
+                history_summary: "History/Details Summary:",
+                error_upload: "Error: Please select a valid image file.",
+                status_loaded: "Image loaded. Ready for analysis.",
+                status_analyzing: "Analyzing...",
+                status_complete: "Analysis complete. Results found.",
+                nav_analyze: "AI Analysis",
+                nav_community: "Community/Market",
+                nav_signout: "Sign Out",
+                nav_signin: "Sign In",
+                tab_catalog: "Catalog",
+                tab_chat: "Community Chat",
+                chat_title: "Collectors Chat (Buy/Sell/Exchange)",
+                chat_placeholder: "Write your message (propose sales or exchanges)...",
+                send_button: "Send",
+                login_title: "Sign in to WatchNow",
+                login_email: "Email Address",
+                login_password: "Password",
+                login_button: "Sign In",
+                signup_button: "Create Account",
+                login_anon_button: "Continue as Anonymous",
+                error_auth: "Authentication error: Invalid credentials or account already exists.",
+                current_user: "User:",
+                user_anon: "Anonymous",
+                error_403: "❌ ERROR 403! Access Denied. API key is restricted. Check application restriction in Google Cloud (must be *.github.io/* or 'None').",
+                catalog_title: "Community Watch Catalog",
+                catalog_prompt: "Explore the collection or use AI Analysis to identify a watch and add it."
+            }
+        };
+
+        function T(key) {
+            return translations[currentLang][key] || key;
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            // Guardar en localStorage para persistencia (opcional)
+            localStorage.setItem('watchnow_lang', lang);
+            updateUI();
+        }
+        
+        // Cargar idioma guardado
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('watchnow_lang');
+            if (savedLang && translations[savedLang]) {
+                currentLang = savedLang;
+            }
+            // Marcador visual de idioma
+            document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+                btn.dataset.active = (btn.getAttribute('data-lang-btn') === currentLang);
+            });
+            updateUI(); // Llamada inicial a updateUI
+        });
+
+        // Función para aplicar traducciones a todos los elementos con data-key
+        function applyTranslations() {
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                el.textContent = T(key);
+            });
+            // Actualizar placeholders y títulos
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) chatInput.placeholder = T('chat_placeholder');
+        }
+
+        // ===============================================
+        // 4. LÓGICA DE AUTENTICACIÓN
+        // ===============================================
+
+        // Inicialización de Auth (usando el token o anónimo)
+        async function initAuth() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+            }
+        }
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                userName = user.email ? user.email.split('@')[0] : T('user_anon');
+                
+                // Si el usuario acaba de iniciar sesión, lo movemos a la vista de análisis
+                if (!isAuthReady) {
+                    currentView = 'analyze'; 
+                }
+            } else {
+                userId = null;
+                userName = null;
+                currentView = 'auth';
+            }
+            isAuthReady = true;
+            updateUI();
+        });
+        
+        // Funciones de control de Auth
+        window.handleSignIn = async (email, password) => {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                document.getElementById('authError').textContent = T('error_auth');
+            }
+        };
+
+        window.handleSignUp = async (email, password) => {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // Opcional: Establecer un nombre de usuario básico
+                await updateProfile(userCredential.user, { displayName: email.split('@')[0] });
+            } catch (error) {
+                document.getElementById('authError').textContent = T('error_auth');
+            }
+        };
+
+        window.handleSignOut = async () => {
+            await signOut(auth);
+            // El onAuthStateChanged se encargará de cambiar la vista a 'auth'
+        };
+
+        window.handleAnonSignIn = async () => {
+            await signInAnonymously(auth);
+        };
+
+        // ===============================================
+        // 5. LÓGICA DE FIREBASE FIRESTORE (CATÁLOGO Y CHAT)
+        // ===============================================
+
+        // RUTAS DE FIREBASE
+        const CHAT_COLLECTION_PATH = `artifacts/${appId}/public/data/chat_messages`;
+        const CATALOG_COLLECTION_PATH = `artifacts/${appId}/public/data/watch_catalog`;
+
+        let catalogData = [];
+
+        // Inicializa el listener del catálogo
+        function setupCatalogListener() {
+            if (!userId) return;
+
+            const q = collection(db, CATALOG_COLLECTION_PATH);
+            
+            // Limitamos a 50 elementos (o el número deseado)
+            onSnapshot(q, (snapshot) => {
+                catalogData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Solo renderiza si estamos en la vista de comunidad y el tab de catálogo
+                if (currentView === 'community' && communityTab === 'catalog') {
+                    renderCatalog();
+                }
+            }, (error) => {
+                console.error("Error al escuchar el catálogo:", error);
+            });
+        }
+
+        // Inicializa el listener del chat
+        function setupChatListener() {
+            if (!userId) return;
+
+            const chatContainer = document.getElementById('chatMessages');
+            if (!chatContainer) return; // Si no estamos en la vista de chat, salimos
+
+            const q = query(collection(db, CHAT_COLLECTION_PATH), orderBy('timestamp', 'desc'));
+            
+            onSnapshot(q, (snapshot) => {
+                const messages = snapshot.docs.map(doc => doc.data()).reverse(); // Los más nuevos abajo
+                renderChatMessages(messages);
+            }, (error) => {
+                console.error("Error al escuchar el chat:", error);
+                chatContainer.innerHTML = `<p class="text-red-400 p-4">${T('error_auth')}: No se pudo cargar el chat.</p>`;
+            });
+        }
+
+        window.handleSendMessage = async () => {
+            const chatInput = document.getElementById('chatInput');
+            const messageText = chatInput.value.trim();
+
+            if (!messageText || !userId) return;
+
+            try {
+                await addDoc(collection(db, CHAT_COLLECTION_PATH), {
+                    text: messageText,
+                    timestamp: serverTimestamp(),
+                    userId: userId,
+                    userName: userName || T('user_anon')
+                });
+                chatInput.value = '';
+                // Desplazarse al último mensaje después de enviar
+                setTimeout(() => {
+                    const chatMessages = document.getElementById('chatMessages');
+                    if(chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 50);
+            } catch (e) {
+                console.error("Error al enviar mensaje:", e);
+                displayStatus("Error al enviar el mensaje.", 'text-red-400');
+            }
+        };
+        
+        // ===============================================
+        // 6. LÓGICA DE ANÁLISIS IA (Vision API)
+        // ===============================================
+
+        // (Mantengo la lógica de la API de Vision anterior, adaptada a la nueva estructura)
+        window.previewImage = function(event) {
             const file = event.target.files[0];
+            const inputImage = document.getElementById('inputImage');
+            const analyzeButton = document.getElementById('analyzeButton');
+
             if (!file) return;
 
-            // Validación básica de imagen
             if (!file.type.startsWith('image/')) {
-                displayStatus("Error: Por favor, seleccione un archivo de imagen válido.", 'text-red-400');
+                displayStatus(T('error_upload'), 'text-red-400');
                 return;
             }
 
@@ -166,37 +410,29 @@
                 inputImage.src = e.target.result;
                 inputImage.classList.remove('hidden');
                 analyzeButton.disabled = false;
-                base64Image = e.target.result.split(',')[1]; // Elimina el prefijo data:image/...
-                displayStatus("Imagen cargada. Lista para analizar.", 'text-gray-400');
-                resultsSection.classList.add('hidden');
+                base64Image = e.target.result.split(',')[1];
+                displayStatus(T('status_loaded'), 'text-gray-400');
+                document.getElementById('resultsSection')?.classList.add('hidden');
             };
             reader.readAsDataURL(file);
         }
 
-        // 2. Llama a la API de Google Cloud Vision
-        async function analyzeWatch() {
-            if (!base64Image) {
-                displayStatus("Error: Por favor, suba una imagen primero.", 'text-red-400');
-                return;
-            }
+        window.analyzeWatch = async function() {
+            // (La misma lógica de llamada a la API Vision que en la versión anterior)
+            if (!base64Image) { displayStatus(T('error_upload'), 'text-red-400'); return; }
 
-            // Muestra indicador de carga
+            const analyzeButton = document.getElementById('analyzeButton');
+            const spinner = document.getElementById('spinner');
+            const buttonText = document.getElementById('buttonText');
+            
             analyzeButton.disabled = true;
-            buttonText.textContent = "Analizando...";
+            buttonText.textContent = T('status_analyzing');
             spinner.classList.remove('hidden');
-            resultsSection.classList.add('hidden');
-            displayStatus("", 'text-gray-400'); // Limpia el estado
+            document.getElementById('resultsSection')?.classList.add('hidden');
+            displayStatus("", 'text-gray-400'); 
 
             const payload = {
-                requests: [
-                    {
-                        image: { content: base64Image },
-                        features: [
-                            { type: "LABEL_DETECTION", maxResults: 5 }, // Para etiquetas generales (reloj, pulsera)
-                            { type: "WEB_DETECTION", maxResults: 5 }  // Para identificar marcas y modelos web
-                        ]
-                    }
-                ]
+                requests: [{ image: { content: base64Image }, features: [{ type: "LABEL_DETECTION", maxResults: 5 }, { type: "WEB_DETECTION", maxResults: 10 }] }]
             };
 
             try {
@@ -206,136 +442,381 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (response.status === 400) {
-                    // Posiblemente error de clave de API o formato JSON.
-                    const errorData = await response.json();
-                    const errorMessage = errorData.error?.message || "Error desconocido de la API.";
-                    
-                    if (errorMessage.includes("API key not valid")) {
-                        displayStatus("Error Crítico: Clave de API Inválida. Verifique que la clave es correcta y que la Vision API está habilitada.", 'text-red-500 font-bold');
-                    } else if (errorMessage.includes("API has not been used in project")) {
-                        displayStatus("Error Crítico: Vision API No Activada. Active el servicio en Google Cloud.", 'text-red-500 font-bold');
-                    } else {
-                        displayStatus(`Error HTTP 400. Consulte la Consola (F12) para más detalles. Mensaje: ${errorMessage}`, 'text-red-400');
-                    }
-                    throw new Error(`Error HTTP 400: ${errorMessage}`);
+                if (response.status === 403) {
+                    displayStatus(T('error_403'), 'text-red-500 font-bold');
+                    throw new Error(`Error HTTP 403`);
                 }
                 
                 if (!response.ok) {
-                    if (response.status === 403) {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.error?.message || "Acceso Denegado (Forbidden).";
-                        
-                        // Mensaje de solución muy específico para el 403
-                        displayStatus(`❌ ¡Error 403! Acceso Denegado. La clave de API está restringida. Debe **eliminar la restricción 'HTTP Referrers'** en Google Cloud Console para que funcione en GitHub Pages.`, 'text-red-500 font-bold');
-                        
-                        throw new Error(`Error HTTP 403 (Restricción de API Key): ${errorMessage}`);
-                    }
                     throw new Error(`Error HTTP: ${response.status}`);
                 }
 
                 const data = await response.json();
-                
-                // 3. Procesa los resultados y busca en la base de datos
                 processResults(data);
 
             } catch (error) {
                 console.error("Error en la llamada a la API:", error);
-                // Si ya se manejó el 400 o 403, solo actualiza la UI.
-                if (!error.message.includes("Error HTTP 400") && !error.message.includes("Error HTTP 403")) {
-                    displayStatus(`Error en la conexión o análisis de IA. Verifique la red y la Consola. (${error.message})`, 'text-red-400');
-                }
+                displayStatus("Error de conexión o API. Revise la Consola (F12).", 'text-red-400');
                 updateUIForError();
             }
         }
 
-        // 4. Procesa y muestra los resultados de la IA y la Base de Datos
         function processResults(data) {
-            let topLabel = "reloj"; // Etiqueta por defecto si no se encuentra nada específico
+            let topLabel = null; 
+            let watchData = null;
 
             try {
+                // Lógica de identificación mejorada para buscar en nuestro catálogo de Firestore
                 const webEntities = data.responses[0].webDetection?.webEntities || [];
                 
-                // Intentar encontrar una marca o modelo específico en las detecciones web
                 if (webEntities.length > 0) {
                     for (const entity of webEntities) {
                         const description = entity.description ? entity.description.toLowerCase() : '';
-                        if (description.includes("rolex submariner") || description.includes("submariner")) {
-                            topLabel = "rolex submariner";
-                            break;
-                        } else if (description.includes("rolex daytona") || description.includes("daytona")) {
-                            topLabel = "rolex daytona";
-                            break;
-                        } else if (description.includes("omega speedmaster") || description.includes("speedmaster")) {
-                            topLabel = "omega speedmaster";
-                            break;
-                        } else if (description.includes("patek philippe nautilus") || description.includes("nautilus")) {
-                            topLabel = "patek philippe nautilus";
-                            break;
-                        } else if (description.includes("tag heuer carrera") || description.includes("carrera")) {
-                            topLabel = "tag heuer carrera";
-                            break;
-                        } else if (description.includes("watch") || description.includes("reloj")) {
-                            // Continuar buscando un modelo más específico
-                        }
+                        watchData = catalogData.find(watch => description.includes(watch.id.toLowerCase()));
+                        if (watchData) break;
                     }
                 }
-
-                // Si no se encontró nada específico de la web, usamos la detección de etiquetas (label detection)
-                if (topLabel === "reloj") {
-                    const labelAnnotations = data.responses[0].labelAnnotations || [];
-                    if (labelAnnotations.length > 0) {
-                        const labels = labelAnnotations.map(a => a.description.toLowerCase());
-                        if (labels.some(l => l.includes("watch strap") || l.includes("bracelet"))) {
-                            topLabel = "brazalete";
-                        }
-                    }
+                
+                // Fallback si no se encuentra en el catálogo
+                if (!watchData) {
+                    watchData = {
+                        id: "no_identificado", 
+                        name: "Modelo no identificado", 
+                        caliber: "Desconocido", 
+                        price: "Consultar mercado", 
+                        history: "La IA no pudo vincular la imagen a un modelo específico en nuestro catálogo. Intente con una foto más clara del cuadrante.",
+                        imageUrl: "https://placehold.co/150x150/161b22/8b949e?text=?"
+                    };
                 }
-
-                // Buscar datos en nuestra base de datos local
-                const dbEntry = WATCH_DATABASE.find(item => item.id === topLabel) || WATCH_DATABASE.find(item => item.id === "reloj");
 
                 // Actualizar la interfaz de usuario con los resultados
-                document.getElementById('watchName').textContent = dbEntry.id.toUpperCase().replace('RELOJ', 'Reloj Básico');
-                document.getElementById('modelName').textContent = dbEntry.name;
-                document.getElementById('caliber').textContent = dbEntry.caliber;
-                document.getElementById('priceRange').textContent = dbEntry.price;
-                document.getElementById('historySummary').textContent = dbEntry.history;
+                document.getElementById('watchName').textContent = watchData.id.toUpperCase();
+                document.getElementById('modelName').textContent = watchData.name;
+                document.getElementById('caliber').textContent = watchData.caliber;
+                document.getElementById('priceRange').textContent = watchData.price;
+                document.getElementById('historySummary').textContent = watchData.history;
 
-                resultsSection.classList.remove('hidden');
-                displayStatus("Análisis completado. Resultados encontrados.", 'text-green-400');
+                document.getElementById('resultsSection')?.classList.remove('hidden');
+                displayStatus(T('status_complete'), 'text-green-400');
 
             } catch (e) {
                 console.error("Error al procesar la estructura de datos:", e);
-                displayStatus("Análisis de IA fallido. Intente con una imagen diferente o revise la consola.", 'text-red-400');
-                updateUIForError();
+                displayStatus("Error al procesar los resultados de la IA.", 'text-red-400');
             } finally {
-                // Oculta indicador de carga
                 updateUIForSuccess();
             }
         }
         
-        // Funciones de utilidad para la UI
+        // ===============================================
+        // 7. RENDERING Y CONTROL DE VISTAS (UI)
+        // ===============================================
+        
+        window.setView = (view) => {
+            if (view === 'auth' && userId) return; // No ir a auth si ya está logueado
+            if ((view === 'analyze' || view === 'community') && !userId) view = 'auth'; // Forzar Auth
+            currentView = view;
+            updateUI();
+        };
+
+        window.setCommunityTab = (tab) => {
+            communityTab = tab;
+            updateUI();
+        }
+
         function displayStatus(message, colorClass) {
-            statusMessage.textContent = message;
-            statusMessage.className = `mt-4 text-center text-sm ${colorClass}`;
-            statusMessage.classList.remove('hidden');
+            const statusMessage = document.getElementById('statusMessage');
+            if(statusMessage) {
+                statusMessage.textContent = message;
+                statusMessage.className = `mt-4 text-center text-sm ${colorClass}`;
+                statusMessage.classList.remove('hidden');
+            }
         }
 
         function updateUIForError() {
-            analyzeButton.disabled = false;
-            buttonText.textContent = "Analizar y Buscar Historia";
-            spinner.classList.add('hidden');
-            // No ocultar resultsSection si el error es solo por la clave API (para dejar visible el mensaje de error crítico)
+            const analyzeButton = document.getElementById('analyzeButton');
+            const buttonText = document.getElementById('buttonText');
+            const spinner = document.getElementById('spinner');
+
+            if (analyzeButton) analyzeButton.disabled = false;
+            if (buttonText) buttonText.textContent = T('analyze_button');
+            if (spinner) spinner.classList.add('hidden');
         }
 
         function updateUIForSuccess() {
-            analyzeButton.disabled = false;
-            buttonText.textContent = "Analizar de Nuevo";
-            spinner.classList.add('hidden');
+            updateUIForError(); // Restablece el botón de análisis
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
+        function updateUI() {
+            const appContainer = document.getElementById('appContainer');
+            const mainNav = document.getElementById('mainNav');
+            const currentUserDisplay = document.getElementById('currentUserDisplay');
+
+            // 1. Mostrar/Ocultar y actualizar la navegación principal
+            if (userId) {
+                mainNav.classList.remove('hidden');
+                currentUserDisplay.textContent = `${T('current_user')} ${userName}`;
+                
+                // Actualizar el estado activo de la navegación
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('tab-active');
+                });
+                document.getElementById(`nav${currentView.charAt(0).toUpperCase() + currentView.slice(1)}`)?.classList.add('tab-active');
+
+            } else {
+                mainNav.classList.add('hidden');
+                currentView = 'auth';
+            }
+            
+            // 2. Renderizar la vista actual
+            appContainer.innerHTML = '';
+            
+            if (!isAuthReady) {
+                 appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
+            } else if (currentView === 'auth') {
+                appContainer.innerHTML = renderAuthView();
+            } else if (currentView === 'analyze') {
+                appContainer.innerHTML = renderAnalyzeView();
+            } else if (currentView === 'community') {
+                appContainer.innerHTML = renderCommunityView();
+            }
+
+            // 3. Aplicar traducciones a la vista recién cargada
+            applyTranslations();
+            
+            // 4. Inicializar listeners específicos de la vista
+            if (currentView === 'community') {
+                if (communityTab === 'chat') {
+                    setupChatListener();
+                } else if (communityTab === 'catalog') {
+                    setupCatalogListener();
+                    renderCatalog(); // Llamar una vez para la primera carga
+                }
+            }
+            
+            // 5. Actualizar el marcador de idioma
+            document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+                btn.dataset.active = (btn.getAttribute('data-lang-btn') === currentLang);
+            });
+        }
+        
+        // ===============================================
+        // 8. TEMPLATES (HTML strings)
+        // ===============================================
+
+        function renderAuthView() {
+            // Importante: No se usa onsubmit() para prevenir la recarga de la página,
+            // se usa un click event para manejar la autenticación.
+            return `
+                <div class="card p-8 rounded-xl max-w-sm mx-auto">
+                    <h2 class="text-xl font-bold text-center mb-6" data-key="login_title">Ingresar a WatchNow</h2>
+                    <form id="authForm" onsubmit="return false">
+                        <div class="mb-4">
+                            <label for="email" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_email">Correo Electrónico</label>
+                            <input type="email" id="email" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div class="mb-6">
+                            <label for="password" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_password">Contraseña</label>
+                            <input type="password" id="password" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <p id="authError" class="text-red-400 text-sm text-center mb-4"></p>
+                        
+                        <div class="space-y-3">
+                            <button type="button" onclick="handleSignIn(document.getElementById('email').value, document.getElementById('password').value)" class="w-full btn-primary text-white font-semibold py-2 rounded-lg" data-key="login_button">Iniciar Sesión</button>
+                            <button type="button" onclick="handleSignUp(document.getElementById('email').value, document.getElementById('password').value)" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 rounded-lg transition duration-150" data-key="signup_button">Crear Cuenta</button>
+                            <button type="button" onclick="handleAnonSignIn()" class="w-full text-gray-400 hover:text-white text-sm py-2" data-key="login_anon_button">Continuar como Anónimo</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
+
+        function renderAnalyzeView() {
+            return `
+                <!-- Contenedor de Análisis IA -->
+                <div class="card p-6 rounded-xl">
+                    <!-- 1. Carga de Imagen -->
+                    <section id="upload-section" class="mb-6">
+                        <label for="fileInput" class="block text-center cursor-pointer p-4 border-2 border-dashed border-gray-600 rounded-lg hover:border-gray-500 transition duration-150">
+                            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 18m-4-12v6m0 0l-3-3m3 3l3-3"/>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-300" data-key="select_image_prompt">Toca para seleccionar una imagen clara del reloj</p>
+                        </label>
+                        <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
+                        <img id="inputImage" class="hidden mx-auto" alt="Imagen de Reloj a analizar" onerror="this.src='https://placehold.co/150x150/161b22/8b949e?text=WATCH'">
+                    </section>
+
+                    <!-- 2. Botón de Acción -->
+                    <button id="analyzeButton" onclick="analyzeWatch()" class="w-full btn-primary text-white font-semibold py-3 rounded-lg flex items-center justify-center transition duration-150" disabled>
+                        <span id="buttonText" data-key="analyze_button">Analizar Reloj y Buscar</span>
+                        <div id="spinner" class="spinner w-5 h-5 border-2 border-t-white rounded-full ml-3 hidden"></div>
+                    </button>
+
+                    <!-- 3. Mensaje de Estado / Error -->
+                    <p id="statusMessage" class="mt-4 text-center text-sm text-gray-400 hidden"></p>
+                </div>
+
+                <!-- 4. Sección de Resultados -->
+                <section id="resultsSection" class="mt-8 card p-6 rounded-xl hidden">
+                    <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2" data-key="results_title">Resultados del Análisis</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="result-item">
+                            <p class="text-gray-400 text-sm" data-key="ident_ia">Identificación IA:</p>
+                            <p id="watchName" class="text-lg font-semibold text-green-400">...</p>
+                        </div>
+                        <div class="result-item border-t border-gray-800 pt-4">
+                            <p class="text-gray-400 text-sm" data-key="model_estimated">Modelo Estimado (Catálogo):</p>
+                            <p id="modelName" class="text-base font-medium">--</p>
+                        </div>
+                        <div class="result-item">
+                            <p class="text-gray-400 text-sm" data-key="caliber">Calibre / Movimiento:</p>
+                            <p id="caliber" class="text-base font-medium">--</p>
+                        </div>
+                        <div class="result-item">
+                            <p class="text-gray-400 text-sm" data-key="price_range">Precio Estimado (Rango USD):</p>
+                            <p id="priceRange" class="text-base font-medium text-yellow-400">--</p>
+                        </div>
+                    </div>
+
+                    <div class="result-item border-t border-gray-800 pt-4 mt-4">
+                        <p class="text-gray-400 text-sm" data-key="history_summary">Resumen Histórico:</p>
+                        <p id="historySummary" class="text-sm leading-relaxed text-gray-300">--</p>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderCommunityView() {
+            const isCatalogActive = communityTab === 'catalog';
+            const isChatActive = communityTab === 'chat';
+
+            return `
+                <div class="card p-6 rounded-xl">
+                    <!-- Tabs de Comunidad -->
+                    <div class="flex border-b border-gray-700 mb-6">
+                        <button onclick="setCommunityTab('catalog')" class="flex-1 text-center py-2 font-semibold ${isCatalogActive ? 'tab-active' : 'text-gray-400'}" data-key="tab_catalog">Catálogo</button>
+                        <button onclick="setCommunityTab('chat')" class="flex-1 text-center py-2 font-semibold ${isChatActive ? 'tab-active' : 'text-gray-400'}" data-key="tab_chat">Chat Comunitario</button>
+                    </div>
+
+                    <!-- Contenido del Tab -->
+                    ${isCatalogActive ? renderCatalogTemplate() : renderChatTemplate()}
+                </div>
+            `;
+        }
+        
+        function renderCatalogTemplate() {
+             // El contenido de la lista se llena en la función renderCatalog()
+            return `
+                <h2 class="text-xl font-bold mb-4" data-key="catalog_title">Catálogo de Relojes Comunitario</h2>
+                <p class="text-gray-400 text-sm mb-4" data-key="catalog_prompt">Explora la colección o usa el Análisis IA para identificar un reloj.</p>
+                <div id="catalogList" class="space-y-4">
+                    <!-- Los relojes del Catálogo se renderizarán aquí -->
+                    <p class="text-gray-500 text-center">Cargando catálogo...</p>
+                </div>
+                <!-- Funcionalidad de agregar (simplificada) -->
+            `;
+        }
+        
+        function renderChatTemplate() {
+            return `
+                <h2 class="text-xl font-bold mb-4" data-key="chat_title">Chat de Coleccionistas</h2>
+                
+                <!-- Contenedor de Mensajes -->
+                <div id="chatMessages" class="h-80 overflow-y-auto p-3 mb-4 card border-none bg-[#0d1117]/50 flex flex-col space-y-3">
+                    <p class="text-gray-500 text-center">Cargando mensajes...</p>
+                </div>
+                
+                <!-- Formulario de Chat -->
+                <div class="flex space-x-2">
+                    <input type="text" id="chatInput" placeholder="${T('chat_placeholder')}" onkeydown="if(event.key === 'Enter') handleSendMessage()" 
+                           class="flex-grow px-4 py-2 bg-[#2d333b] border border-gray-600 rounded-full text-white focus:ring-green-500 focus:border-green-500">
+                    <button onclick="handleSendMessage()" class="btn-primary text-white font-semibold px-4 py-2 rounded-full flex-shrink-0" data-key="send_button">Enviar</button>
+                </div>
+            `;
+        }
+
+        function renderCatalog() {
+            const catalogList = document.getElementById('catalogList');
+            if (!catalogList) return;
+
+            if (catalogData.length === 0) {
+                 catalogList.innerHTML = `<p class="text-gray-500 text-center">${T('catalog_prompt')}</p>`;
+                 return;
+            }
+            
+            catalogList.innerHTML = catalogData.map(watch => `
+                <div class="flex items-start space-x-4 p-3 border border-gray-700 rounded-lg hover:bg-[#1f242c] transition duration-150">
+                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/161b22/8b949e?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover" alt="Reloj ${watch.name}">
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-semibold text-green-400">${watch.name} (${watch.id.toUpperCase()})</h3>
+                        <p class="text-sm text-gray-300">Calibre: ${watch.caliber}</p>
+                        <p class="text-sm text-yellow-400 font-medium">Precio Est.: ${watch.price}</p>
+                        <p class="text-xs text-gray-500 mt-1">${watch.history.substring(0, 70)}...</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderChatMessages(messages) {
+            const chatContainer = document.getElementById('chatMessages');
+            if (!chatContainer) return;
+
+            chatContainer.innerHTML = messages.map(msg => {
+                const isUser = msg.userId === userId;
+                const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString(currentLang) : '...';
+                
+                return `
+                    <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md message-bubble-${isUser ? 'user' : 'other'}">
+                            <div class="text-xs font-bold ${isUser ? 'text-gray-900' : 'text-green-400'} mb-1">${msg.userName}</div>
+                            <p class="text-sm ${isUser ? 'text-white' : 'text-gray-200'}">${msg.text}</p>
+                            <div class="text-right text-xs mt-1 ${isUser ? 'text-gray-300' : 'text-gray-400'}">${time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Asegurarse de que el scroll esté abajo
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+
+        // ===============================================
+        // 9. SETUP INICIAL DE LA APP Y DATA MOCK
+        // ===============================================
+
+        // Función para cargar los datos iniciales del catálogo a Firestore (solo si está vacío)
+        async function initializeCatalogData() {
+             const MOCK_CATALOG = [
+                { id: "rolex submariner", name: "Rolex Submariner Date", caliber: "Calibre 3235", price: "USD 12,000 - 18,000", history: "Lanzado en 1953, fue el primer reloj de buceo resistente al agua hasta 100 metros. Es un ícono de durabilidad y diseño, popularizado por exploradores y James Bond.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=SUB" },
+                { id: "omega speedmaster", name: "Omega Speedmaster Professional", caliber: "Calibre 1861/3861 (Manual)", price: "USD 5,500 - 8,000", history: "Conocido como el 'Moonwatch' por ser el reloj oficial usado por los astronautas de la NASA en la Luna. Es uno de los cronógrafos más probados y fiables de la historia.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=OMGA" },
+                { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=PATEK" },
+                { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=GRMN" }
+            ];
+
+            const catalogRef = collection(db, CATALOG_COLLECTION_PATH);
+            try {
+                // Intentar obtener un documento para ver si la colección ya tiene datos
+                const snapshot = await getDocs(query(catalogRef));
+                
+                if (snapshot.empty) {
+                    console.log("Inicializando catálogo con datos de ejemplo...");
+                    for (const watch of MOCK_CATALOG) {
+                        // Usamos el ID como nombre de documento para facilitar la búsqueda
+                        await setDoc(doc(catalogRef, watch.id), watch);
+                    }
+                }
+            } catch (e) {
+                console.error("No se pudo inicializar o acceder al catálogo (Verifique Reglas de Seguridad):", e);
+            }
+        }
+        
+        // Ejecución inicial
+        initAuth();
+        initializeCatalogData(); // Pre-poblar el catálogo
     </script>
 </body>
 </html>
