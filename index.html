@@ -13,35 +13,50 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Fondo oscuro tipo GitHub */
+            background-color: #141414; /* Fondo negro suave */
         }
+        
+        /* Definición del color de acento principal (Rojo Vino/Borgoña) */
+        /* Color de acento: #800020 (Rojo Borgoña) */
+        
         .container-app {
             max-width: 600px;
             min-height: 100vh;
             padding: 1.5rem;
         }
         .card {
-            background-color: #161b22; /* Color de fondo de las tarjetas */
-            border: 1px solid #30363d;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            background-color: #1f1f1f; /* Color de fondo de las tarjetas */
+            border: 1px solid #333333;
+            box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
         }
+        
+        /* Estilos para el botón principal (Borgoña) */
         .btn-primary {
-            background-color: #238636;
+            background-color: #800020; /* Rojo Borgoña */
             transition: background-color 0.2s;
         }
         .btn-primary:hover {
-            background-color: #2ea043;
+            background-color: #A30029; /* Borgoña más claro al pasar el ratón */
         }
+        
+        /* Estilos para el spinner de carga */
         .spinner {
-            border-top-color: #238636;
+            border-top-color: #800020; /* Rojo Borgoña */
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Estilos para la pestaña activa */
         .tab-active {
-            border-bottom: 2px solid #238636;
-            color: #238636;
+            border-bottom: 2px solid #800020; /* Rojo Borgoña en el borde */
+            color: #800020;
+        }
+        
+        /* Clase para el texto de acento (Borgoña) */
+        .text-accent {
+            color: #800020;
         }
     </style>
 </head>
@@ -51,7 +66,7 @@
         
         <!-- Encabezado de la Aplicación -->
         <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-[#238636]" data-key="app_title">WatchNow</h1>
+            <h1 class="text-3xl font-bold text-accent" data-key="app_title">WatchNow</h1>
             <p class="text-gray-400 text-sm" data-key="app_subtitle">Identificación, Comunidad y Catálogo de Relojes</p>
 
             <!-- Selector de Idioma -->
@@ -90,7 +105,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, 
                  GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, setDoc, getDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, setDoc, getDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Habilitar logs de Firebase para depuración
         setLogLevel('debug');
@@ -142,11 +157,8 @@
         let app, db, auth;
         try {
             if (isConfigIncomplete) {
-                // Si la configuración es incompleta pero no lanza un error crítico (permite al menos intentar Auth anónimo)
                 console.warn("Intentando inicializar Firebase con configuración incompleta...");
             }
-            // La inicialización fallará aquí si las claves son sintácticamente incorrectas o si Firebase se niega a inicializar
-            // con las cadenas "TU_..."
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
@@ -215,6 +227,7 @@
                 catalog_title: "Catálogo de Relojes Comunitario",
                 catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj.",
                 send_button: "Enviar",
+                chat_placeholder: "Escribe tu mensaje...",
             },
             en: {
                 app_title: "WatchNow",
@@ -253,6 +266,7 @@
                 catalog_title: "Community Watch Catalog",
                 catalog_prompt: "Explore the collection or use AI Analysis to identify a watch.",
                 send_button: "Send",
+                chat_placeholder: "Type your message...",
             }
         };
 
@@ -271,6 +285,8 @@
             if (savedLang && translations[savedLang]) {
                 currentLang = savedLang;
             }
+            // Primera actualización para asegurar la traducción inicial
+            updateUI(); 
         });
 
         function applyTranslations() {
@@ -325,6 +341,7 @@
                         currentView = 'analyze'; 
                     }
                     
+                    // Inicializamos el catálogo solo después de la autenticación
                     initializeCatalogData(); 
                 } else {
                     userId = null;
@@ -334,6 +351,7 @@
                 updateUI();
             }, (error) => {
                 isAuthReady = true;
+                // Si hay un error de autenticación (ej. token inválido), mostramos el error crítico
                 document.getElementById('appContainer').innerHTML = renderCriticalError(T('error_auth_fail') + " Detalles: " + error.message);
                 updateUI();
             });
@@ -386,7 +404,6 @@
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
-                // El error 12000 es común si no está configurado correctamente el dominio en Firebase/Facebook Developer
                 console.error("Error al iniciar sesión con Facebook:", error);
                 document.getElementById('authError').textContent = T('error_auth') + " (Facebook). Asegúrese de haber configurado el App Domain en Facebook Developers.";
             }
@@ -427,7 +444,6 @@
             const chatContainer = document.getElementById('chatMessages');
             if (!chatContainer) return;
 
-            // Eliminamos orderBy para evitar problemas de índice, y ordenamos en memoria
             const q = collection(db, CHAT_COLLECTION_PATH);
             
             unsubscribeChat = onSnapshot(q, (snapshot) => {
@@ -466,7 +482,10 @@
             }
         };
         
-        // ... (El resto de la lógica de Análisis IA se mantiene igual) ...
+        // ===============================================
+        // 6. LÓGICA DE ANÁLISIS DE IMAGEN (VISION AI)
+        // ===============================================
+
         window.previewImage = function(event) {
             const file = event.target.files[0];
             const inputImage = document.getElementById('inputImage');
@@ -484,6 +503,7 @@
                 inputImage.src = e.target.result;
                 inputImage.classList.remove('hidden');
                 analyzeButton.disabled = false;
+                // Almacenamos solo la parte base64 de la imagen
                 base64Image = e.target.result.split(',')[1];
                 displayStatus(T('status_loaded'), 'text-gray-400');
                 document.getElementById('resultsSection')?.classList.add('hidden');
@@ -504,6 +524,7 @@
             document.getElementById('resultsSection')?.classList.add('hidden');
             displayStatus("", 'text-gray-400'); 
 
+            // Payload para Google Vision AI: Detección de Etiquetas y Detección Web para identificar el reloj
             const payload = {
                 requests: [{ image: { content: base64Image }, features: [{ type: "LABEL_DETECTION", maxResults: 5 }, { type: "WEB_DETECTION", maxResults: 10 }] }]
             };
@@ -540,14 +561,17 @@
             try {
                 const webEntities = data.responses[0].webDetection?.webEntities || [];
                 
+                // Intentar hacer match con el catálogo usando las descripciones de las entidades web
                 if (webEntities.length > 0) {
                     for (const entity of webEntities) {
                         const description = entity.description ? entity.description.toLowerCase() : '';
+                        // Buscar si alguna descripción coincide con el ID de un reloj en el catálogo
                         watchData = catalogData.find(watch => description.includes(watch.id.toLowerCase()));
                         if (watchData) break;
                     }
                 }
                 
+                // Si no se encuentra, usar datos genéricos de "No identificado"
                 if (!watchData) {
                     watchData = {
                         id: "no_identificado", 
@@ -555,10 +579,11 @@
                         caliber: "Desconocido", 
                         price: "Consultar mercado", 
                         history: "La IA no pudo vincular la imagen a un modelo específico en nuestro catálogo. Intente con una foto más clara del cuadrante.",
-                        imageUrl: "https://placehold.co/150x150/161b22/8b949e?text=?"
+                        imageUrl: "https://placehold.co/150x150/1f1f1f/AAAAAA?text=?"
                     };
                 }
 
+                // Actualizar la interfaz de resultados
                 document.getElementById('watchName').textContent = watchData.id.toUpperCase();
                 document.getElementById('modelName').textContent = watchData.name;
                 document.getElementById('caliber').textContent = watchData.caliber;
@@ -566,8 +591,8 @@
                 document.getElementById('historySummary').textContent = watchData.history;
 
                 document.getElementById('resultsSection')?.classList.remove('hidden');
-                displayStatus(T('status_complete'), 'text-green-400');
-
+                displayStatus(T('status_complete'), 'text-accent'); // Usamos el color de acento
+                
             } catch (e) {
                 console.error("Error al procesar la estructura de datos:", e);
                 displayStatus("Error al procesar los resultados de la IA.", 'text-red-400');
@@ -576,7 +601,10 @@
             }
         }
         
-        // ... (El resto de la lógica de Rendering y Templates) ...
+        // ===============================================
+        // 7. LÓGICA DE RENDERING Y UTILIDADES
+        // ===============================================
+
         window.setView = (view) => {
             if (!isAuthReady) return; 
             if ((view === 'analyze' || view === 'community') && !userId) view = 'auth';
@@ -639,7 +667,8 @@
 
             if (userId) {
                 mainNav.classList.remove('hidden');
-                currentUserDisplay.textContent = `${T('current_user')} ${userName.length > 20 ? userName.substring(0, 17) + '...' : userName}`;
+                // Mostramos el ID de usuario completo según las directrices para apps multiusuario.
+                currentUserDisplay.textContent = `${T('current_user')} ${userName} (${userId.substring(0, 8)}...)`;
                 
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('tab-active');
@@ -671,6 +700,7 @@
                     renderCatalog();
                 }
             } else {
+                // Desuscribirse de listeners si se cambia de vista
                 if (unsubscribeCatalog) { unsubscribeCatalog(); unsubscribeCatalog = null; }
                 if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
             }
@@ -683,15 +713,15 @@
         function renderAuthView() {
             return `
                 <div class="card p-8 rounded-xl max-w-sm mx-auto">
-                    <h2 class="text-xl font-bold text-center mb-6" data-key="login_title">Ingresar a WatchNow</h2>
+                    <h2 class="text-xl font-bold text-center mb-6 text-accent" data-key="login_title">Ingresar a WatchNow</h2>
                     <form id="authForm" onsubmit="return false">
                         <div class="mb-4">
                             <label for="email" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_email">Correo Electrónico</label>
-                            <input type="email" id="email" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500">
+                            <input type="email" id="email" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-accent focus:border-accent">
                         </div>
                         <div class="mb-6">
                             <label for="password" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_password">Contraseña</label>
-                            <input type="password" id="password" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500">
+                            <input type="password" id="password" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-accent focus:border-accent">
                         </div>
                         <p id="authError" class="text-red-400 text-sm text-center mb-4"></p>
                         
@@ -701,7 +731,7 @@
                             
                             <div class="text-center text-sm text-gray-500 my-4">-- O --</div>
 
-                            <!-- Botones de Autenticación Social -->
+                            <!-- Botones de Autenticación Social (Usando los colores nativos o neutros para mantener la distinción) -->
                             <button type="button" onclick="handleGoogleSignIn()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-semibold py-2 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
                                 <i class="fab fa-google"></i>
                                 <span data-key="login_with_google">Google</span>
@@ -731,7 +761,8 @@
                             <p class="mt-2 text-sm text-gray-300" data-key="select_image_prompt">Toca para seleccionar una imagen clara del reloj</p>
                         </label>
                         <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
-                        <img id="inputImage" class="hidden mx-auto" alt="Imagen de Reloj a analizar" onerror="this.src='https://placehold.co/150x150/161b22/8b949e?text=WATCH'">
+                        <!-- Imagen de previsualización: usa un placeholder con fondo oscuro compatible con el tema -->
+                        <img id="inputImage" class="hidden mx-auto mt-4 rounded-lg border border-gray-700 w-full max-h-80 object-contain" alt="Imagen de Reloj a analizar" onerror="this.src='https://placehold.co/150x150/1f1f1f/AAAAAA?text=WATCH'">
                     </section>
 
                     <!-- 2. Botón de Acción -->
@@ -751,19 +782,19 @@
                     <div class="space-y-4">
                         <div class="result-item">
                             <p class="text-gray-400 text-sm" data-key="ident_ia">Identificación IA:</p>
-                            <p id="watchName" class="text-lg font-semibold text-green-400">...</p>
+                            <p id="watchName" class="text-lg font-semibold text-accent">...</p>
                         </div>
                         <div class="result-item border-t border-gray-800 pt-4">
                             <p class="text-gray-400 text-sm" data-key="model_estimated">Modelo Estimado (Catálogo):</p>
-                            <p id="modelName" class="text-base font-medium">--</p>
+                            <p id="modelName" class="text-base font-medium text-white">--</p>
                         </div>
                         <div class="result-item">
                             <p class="text-gray-400 text-sm" data-key="caliber">Calibre / Movimiento:</p>
-                            <p id="caliber" class="text-base font-medium">--</p>
+                            <p id="caliber" class="text-base font-medium text-white">--</p>
                         </div>
                         <div class="result-item">
                             <p class="text-gray-400 text-sm" data-key="price_range">Precio Estimado (Rango USD):</p>
-                            <p id="priceRange" class="text-base font-medium text-yellow-400">--</p>
+                            <p id="priceRange" class="text-base font-medium text-yellow-500">--</p>
                         </div>
                     </div>
 
@@ -795,7 +826,7 @@
         
         function renderCatalogTemplate() {
             return `
-                <h2 class="text-xl font-bold mb-4" data-key="catalog_title">Catálogo de Relojes Comunitario</h2>
+                <h2 class="text-xl font-bold mb-4 text-accent" data-key="catalog_title">Catálogo de Relojes Comunitario</h2>
                 <p class="text-gray-400 text-sm mb-4" data-key="catalog_prompt">Explora la colección o usa el Análisis IA para identificar un reloj.</p>
                 <div id="catalogList" class="space-y-4">
                     <!-- Los relojes del Catálogo se renderizarán aquí -->
@@ -806,17 +837,17 @@
         
         function renderChatTemplate() {
             return `
-                <h2 class="text-xl font-bold mb-4" data-key="chat_title">Chat de Coleccionistas</h2>
+                <h2 class="text-xl font-bold mb-4 text-accent" data-key="chat_title">Chat de Coleccionistas</h2>
                 
                 <!-- Contenedor de Mensajes -->
-                <div id="chatMessages" class="h-80 overflow-y-auto p-3 mb-4 card border-none bg-[#0d1117]/50 flex flex-col space-y-3">
+                <div id="chatMessages" class="h-80 overflow-y-auto p-3 mb-4 card border-none bg-[#141414]/50 flex flex-col space-y-3">
                     <p class="text-gray-500 text-center">Cargando mensajes...</p>
                 </div>
                 
                 <!-- Formulario de Chat -->
                 <div class="flex space-x-2">
                     <input type="text" id="chatInput" placeholder="${T('chat_placeholder')}" onkeydown="if(event.key === 'Enter') handleSendMessage()" 
-                           class="flex-grow px-4 py-2 bg-[#2d333b] border border-gray-600 rounded-full text-white focus:ring-green-500 focus:border-green-500">
+                           class="flex-grow px-4 py-2 bg-[#2d333b] border border-gray-600 rounded-full text-white focus:ring-accent focus:border-accent">
                     <button onclick="handleSendMessage()" class="btn-primary text-white font-semibold px-4 py-2 rounded-full flex-shrink-0" data-key="send_button">Enviar</button>
                 </div>
             `;
@@ -832,12 +863,12 @@
             }
             
             catalogList.innerHTML = catalogData.map(watch => `
-                <div class="flex items-start space-x-4 p-3 border border-gray-700 rounded-lg hover:bg-[#1f242c] transition duration-150">
-                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/0d1117/30363d?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover" alt="Reloj ${watch.name}">
+                <div class="flex items-start space-x-4 p-3 border border-gray-700 rounded-lg hover:bg-[#252525] transition duration-150">
+                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/141414/333333?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover border border-gray-600" alt="Reloj ${watch.name}">
                     <div class="flex-grow">
-                        <h3 class="text-lg font-semibold text-green-400">${watch.name} (${watch.id.toUpperCase()})</h3>
+                        <h3 class="text-lg font-semibold text-accent">${watch.name} (${watch.id.toUpperCase()})</h3>
                         <p class="text-sm text-gray-300">Calibre: ${watch.caliber}</p>
-                        <p class="text-sm text-yellow-400 font-medium">Precio Est.: ${watch.price}</p>
+                        <p class="text-sm text-yellow-500 font-medium">Precio Est.: ${watch.price}</p>
                         <p class="text-xs text-gray-500 mt-1">${watch.history.substring(0, 70)}...</p>
                     </div>
                 </div>
@@ -856,10 +887,10 @@
                 
                 return `
                     <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md ${isUser ? 'bg-green-700' : 'bg-[#2d333b]'}">
-                            <div class="text-xs font-bold ${isUser ? 'text-gray-900' : 'text-green-400'} mb-1">${msg.userName}</div>
+                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md ${isUser ? 'bg-[#800020]' : 'bg-[#2d333b]'}">
+                            <div class="text-xs font-bold ${isUser ? 'text-white' : 'text-accent'} mb-1">${msg.userName}</div>
                             <p class="text-sm text-white">${msg.text}</p>
-                            <div class="text-right text-xs mt-1 ${isUser ? 'text-gray-300' : 'text-gray-400'}">${time}</div>
+                            <div class="text-right text-xs mt-1 ${isUser ? 'text-gray-200' : 'text-gray-400'}">${time}</div>
                         </div>
                     </div>
                 `;
@@ -872,15 +903,15 @@
 
 
         // ===============================================
-        // 9. SETUP INICIAL DE LA APP Y DATA MOCK
+        // 8. SETUP INICIAL DE LA APP Y DATA MOCK
         // ===============================================
 
         async function initializeCatalogData() {
              const MOCK_CATALOG = [
-                { id: "rolex submariner", name: "Rolex Submariner Date", caliber: "Calibre 3235", price: "USD 12,000 - 18,000", history: "Lanzado en 1953, fue el primer reloj de buceo resistente al agua hasta 100 metros. Es un ícono de durabilidad y diseño, popularizado por exploradores y James Bond.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=SUB" },
-                { id: "omega speedmaster", name: "Omega Speedmaster Professional", caliber: "Calibre 1861/3861 (Manual)", price: "USD 5,500 - 8,000", history: "Conocido como el 'Moonwatch' por ser el reloj oficial usado por los astronautas de la NASA en la Luna. Es uno de los cronógrafos más probados y fiables de la historia.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=OMGA" },
-                { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=PATEK" },
-                { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=GRMN" }
+                { id: "rolex submariner", name: "Rolex Submariner Date", caliber: "Calibre 3235", price: "USD 12,000 - 18,000", history: "Lanzado en 1953, fue el primer reloj de buceo resistente al agua hasta 100 metros. Es un ícono de durabilidad y diseño, popularizado por exploradores y James Bond.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=SUB" },
+                { id: "omega speedmaster", name: "Omega Speedmaster Professional", caliber: "Calibre 1861/3861 (Manual)", price: "USD 5,500 - 8,000", history: "Conocido como el 'Moonwatch' por ser el reloj oficial usado por los astronautas de la NASA en la Luna. Es uno de los cronógrafos más probados y fiables de la historia.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=OMGA" },
+                { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=PATEK" },
+                { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=GRMN" }
             ];
 
             if (!db) {
