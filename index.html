@@ -4,120 +4,221 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WatchNow - Plataforma de Coleccionistas</title>
+    
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- Configuración para usar la fuente Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Iconos de Lucide (usados para navegación) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
     <style>
-        /* Configuración de color para el tema oscuro */
+        /* --- PALETA DE COLORES: VERDE ROLEX Y CROMO BRILLANTE --- */
         :root {
-            --bg-color: #121212; /* Fondo muy oscuro, casi negro */
-            --card-bg: #1e1e1e; /* Fondo de tarjeta un poco más claro */
-            --text-color: #e0e0e0; /* Texto claro */
-            --primary-btn: #1A73E8; /* Azul sobrio para acciones principales (LOGIN) */
-            --secondary-btn: #424242; /* Gris para acciones secundarias */
-            --google-btn: #4285F4; /* Azul de Google */
-            --facebook-btn: #1877F2; /* Azul de Facebook */
-            --input-border: #333333; /* Borde de input */
+            --rolex-green-light: #1A522C;  /* Fondo: Verde Rolex claro (botella profundo) */
+            --rolex-green-dark: #0B3419;   /* Fondo de tarjeta: Verde Rolex oscuro */
+            
+            --silver-chrome: #A9A9A9;      /* Plata Brillante (Acento Principal/Botones/Bordes) */
+            --text-on-silver: #000000;     /* Texto sobre Plata: Negro */
+            --text-base: #FFFFFF;          /* Texto principal: Blanco Puro */
+            
+            --secondary-accent: #C70039;   /* Acento Secundario: Rojo Oscuro (para warnings) */
+            --input-bg: #F0F0F0;           
+            --input-border: #777777;       
+            --placeholder-color: #666666;  
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--rolex-green-light);
+            color: var(--text-base);
             transition: background-color 0.3s, color 0.3s;
+            /* Borde plateado más grueso y notorio */
+            border: 10px solid var(--silver-chrome); 
+            box-shadow: 0 0 30px rgba(169, 169, 169, 0.5); /* Sombra para darle ese brillo de cromo */
         }
 
-        /* Estilos base para el botón de login */
-        #loginButton {
-            background-color: var(--primary-btn);
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        #loginButton:hover {
-            background-color: #1558b3; /* Tono más oscuro al pasar el ratón */
-        }
-
-        #loginButton:active {
-            transform: scale(0.98);
-        }
-
-        /* Estilos base para el botón de crear cuenta */
-        #createAccountButton {
-            background-color: var(--secondary-btn);
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        #createAccountButton:hover {
-            background-color: #505050; /* Tono más claro al pasar el ratón */
-        }
-
-        #createAccountButton:active {
-            transform: scale(0.98);
-        }
-
-        .auth-card {
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); /* Sombra suave para el modo oscuro */
-        }
-        
-        /* Estilo para el contenedor central */
+        /* Centrar y asegurar el relleno */
         .container-center {
-            min-height: 100vh;
+            min-height: calc(100vh - 20px); 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 1rem;
         }
+        
+        /* Estilos para el contenedor principal de Login/App (el cuadro) */
+        .auth-card {
+            background-color: var(--rolex-green-dark); /* Verde oscuro */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); 
+            /* Borde interior Plateado */
+            border: 3px solid var(--silver-chrome); 
+        }
+
+        /* Estilos para los botones de acción (Plata Brillante con Letras Negras) */
+        .chrome-button {
+            background-color: var(--silver-chrome);
+            color: var(--text-on-silver);
+            font-weight: 700;
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(169, 169, 169, 0.7); 
+            border: 1px solid #FFFFFF; 
+        }
+
+        .chrome-button:hover {
+            background-color: #D3D3D3; 
+            box-shadow: 0 6px 25px rgba(169, 169, 169, 0.9);
+        }
+
+        .chrome-button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); 
+        }
+        
+        /* Estilos para el botón de Cerrar Sesión (Texto sin cuadro, Plata Brillante) */
+        .header-button {
+            background-color: transparent !important; 
+            color: var(--silver-chrome) !important;
+            font-weight: 600;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            transition: color 0.2s;
+        }
+        .header-button:hover {
+            color: #FFFFFF !important; 
+        }
+
+        /* Estilo para los inputs */
+        input {
+             background-color: var(--input-bg) !important;
+             border-color: var(--input-border) !important;
+             color: var(--text-on-silver) !important; 
+        }
+        input:focus {
+            border-color: var(--silver-chrome) !important;
+            box-shadow: 0 0 0 1px var(--silver-chrome) !important;
+        }
+        
+        /* Estilo para el dropdown de idioma */
+        #languageDropdown {
+            background-color: var(--rolex-green-dark);
+            border: 1px solid var(--silver-chrome);
+            color: var(--silver-chrome);
+        }
+        #languageDropdown:focus {
+             border-color: var(--silver-chrome) !important;
+             box-shadow: 0 0 0 1px var(--silver-chrome) !important;
+        }
+
+        /* Clase para los botones de navegación (iconos) */
+        .nav-button {
+            transition: transform 0.1s, opacity 0.2s;
+            color: var(--silver-chrome);
+            opacity: 0.7;
+        }
+        .nav-button:hover {
+            transform: scale(1.05);
+            opacity: 1;
+            color: var(--text-base);
+        }
+        
     </style>
 </head>
 <body>
 
-    <div id="app" class="container-center">
+    <div id="app" class="container-center relative">
 
-        <!-- Contenedor de Idioma (estático para que los listeners no fallen) -->
-        <div id="languageSelector" class="flex justify-center space-x-4 mb-4 mt-8 w-full max-w-sm">
-            <a href="#" id="lang-es" data-lang="es" class="text-gray-200 hover:text-gray-400 text-lg">Español</a>
-            <span class="text-gray-600">|</span>
-            <a href="#" id="lang-en" data-lang="en" class="text-gray-200 hover:text-gray-400 text-lg">English</a>
+        <!-- Contenedores de Encabezado (Absolutos para esquinas) -->
+        <div class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10">
+            <!-- Menú Desplegable de Idioma -->
+            <select id="languageDropdown" 
+                    class="py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out cursor-pointer">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+            </select>
+        </div>
+
+        <div class="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
+            <!-- Botón de Cerrar Sesión (Se muestra solo si está logueado) -->
+            <button id="logoutButtonHeader" class="header-button hidden">
+                <i data-lucide="log-out" class="w-5 h-5 inline-block mr-1"></i>
+                Salir
+            </button>
         </div>
 
         <!-- Contenido dinámico (se carga la pantalla de login o la principal) -->
         <div id="content" class="w-full max-w-sm">
             <!-- Pantalla de Carga Inicial -->
             <div id="loadingScreen" class="text-center">
-                <h1 class="text-3xl font-bold text-gray-200 mb-2">WatchNow</h1>
-                <p class="text-sm text-gray-400 mb-8">Identificación, Comunidad y Catálogo de Relojes</p>
-                <div class="animate-pulse text-xl text-gray-500">
+                <h1 class="text-3xl font-bold text-text-base mb-2">WatchNow</h1>
+                <p class="text-sm text-gray-300">Identificación, Comunidad y Catálogo de Relojes</p>
+                <div class="animate-pulse text-xl mt-8" style="color: var(--silver-chrome);">
                     Cargando aplicación...
                 </div>
             </div>
             
-            <!-- Aquí se insertará la pantalla de Login (por JS) -->
+            <!-- Aquí se insertará la pantalla de Login o la App principal -->
         </div>
     </div>
 
     <!-- Modals y Message Box -->
-    <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div id="messageCard" class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
-            <h3 id="messageTitle" class="text-xl font-bold mb-3 text-gray-900"></h3>
-            <p id="messageBody" class="text-gray-700 mb-5"></p>
-            <button onclick="closeMessageBox()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full">Aceptar</button>
+    <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+        <div id="messageCard" class="p-6 rounded-xl shadow-2xl max-w-sm w-full text-center" style="background-color: var(--rolex-green-dark); border: 3px solid var(--silver-chrome);">
+            <h3 id="messageTitle" class="text-xl font-bold mb-3" style="color: var(--silver-chrome);"></h3>
+            <p id="messageBody" class="text-gray-200 mb-5"></p>
+            <!-- El botón de aceptación del modal también usa el color Plata -->
+            <button onclick="closeMessageBox()" class="chrome-button font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full hover:opacity-80">Aceptar</button>
         </div>
     </div>
+    
+    <!-- Modal para Mi Colección (Subir datos del reloj) -->
+    <div id="collectionModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+        <div class="auth-card p-6 rounded-xl shadow-2xl max-w-lg w-full">
+            <h3 class="text-2xl font-bold mb-4" style="color: var(--silver-chrome);">Mi Colección: Nuevo Reloj</h3>
+            <p class="text-gray-300 mb-4">Ingresa la información de tu reloj (simulación de carga).</p>
+            
+            <div class="space-y-4">
+                <input type="text" id="watchBrand" placeholder="Marca (Ej: Rolex, Omega)" class="w-full px-4 py-3 border rounded-lg">
+                <input type="text" id="watchModel" placeholder="Modelo (Ej: Submariner, Speedmaster)" class="w-full px-4 py-3 border rounded-lg">
+                <input type="text" id="watchYear" placeholder="Año de fabricación" class="w-full px-4 py-3 border rounded-lg">
+                <textarea id="watchNotes" placeholder="Notas adicionales y detalles de la historia" class="w-full px-4 py-3 border rounded-lg h-24 resize-none"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-4 mt-6">
+                <button onclick="closeCollectionModal()" class="header-button py-2 px-4">
+                    Cancelar
+                </button>
+                <button onclick="saveWatchData()" class="chrome-button py-2 px-4 rounded-lg">
+                    Guardar Reloj
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         // Importaciones de Firebase (necesarias para la conexión)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Habilitar logs para ver el estado de Firebase en la consola (F12)
         setLogLevel('Debug');
+        
+        // Inicializar Lucide Icons después de que el DOM esté disponible
+        document.addEventListener('DOMContentLoaded', () => {
+             // Reemplaza los placeholders de iconos SVG
+             lucide.createIcons();
+        });
+
 
         // --- Configuración Global de Canvas (OBLIGATORIA) ---
-        // Estas variables se proporcionan automáticamente en el entorno
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -145,104 +246,161 @@
             const loading = document.getElementById('loadingScreen');
             if (loading) loading.classList.add('hidden');
         }
-
-        const showLoading = () => {
-            const loading = document.getElementById('loadingScreen');
-            if (loading) loading.classList.remove('hidden');
+        
+        const updateHeaderButtons = (isLoggedIn) => {
+             const logoutButton = document.getElementById('logoutButtonHeader');
+             if (logoutButton) {
+                 if (isLoggedIn) {
+                     logoutButton.classList.remove('hidden');
+                 } else {
+                     logoutButton.classList.add('hidden');
+                 }
+             }
         }
-
-        // --- Funciones de Interacción de Firestore ---
+        
+        // --- Funciones de Firestore y Colección ---
 
         const getPrivateCollectionPath = (collectionName) => {
-            // Ruta obligatoria para datos privados del usuario
             return `/artifacts/${appId}/users/${userId}/${collectionName}`;
-        }
-
-        const getPublicCollectionPath = (collectionName) => {
-            // Ruta obligatoria para datos públicos o compartidos
-            return `/artifacts/${appId}/public/data/${collectionName}`;
         }
         
         // Función para guardar un documento de ejemplo al iniciar sesión
         const saveExampleData = async () => {
-            if (!db || !userId) return;
+            if (!db || !userId || !auth.currentUser) return;
             const docRef = doc(db, getPrivateCollectionPath('user_data'), 'profile');
             try {
-                // Guarda la información del usuario anónimo
+                // Guarda la información del usuario anónimo/autenticado
                 await setDoc(docRef, { 
-                    username: 'AnonUser_' + userId.substring(0, 8),
-                    lastLogin: new Date().toISOString()
+                    username: (auth.currentUser.isAnonymous ? 'Anonimo_' : 'Usuario_') + userId.substring(0, 8),
+                    lastLogin: new Date().toISOString(),
+                    email: auth.currentUser.email || 'N/A'
                 }, { merge: true });
-                console.log("Datos de ejemplo guardados exitosamente.");
+                console.log("Datos de perfil guardados/actualizados exitosamente.");
             } catch (error) {
                 console.error("Error al guardar datos de ejemplo:", error);
+            }
+        };
+        
+        window.openCollectionModal = () => {
+            if (userId === 'SIMULADO' || !isAuthReady) {
+                 showMessageBox("Acceso Denegado", "Debes iniciar sesión para gestionar tu Colección.");
+                 return;
+            }
+            document.getElementById('collectionModal').classList.remove('hidden');
+            document.getElementById('collectionModal').classList.add('flex');
+        }
+        
+        window.closeCollectionModal = () => {
+            document.getElementById('collectionModal').classList.add('hidden');
+            document.getElementById('collectionModal').classList.remove('flex');
+        }
+
+        window.saveWatchData = async () => {
+            const brand = document.getElementById('watchBrand').value;
+            const model = document.getElementById('watchModel').value;
+            const year = document.getElementById('watchYear').value;
+            const notes = document.getElementById('watchNotes').value;
+
+            if (!brand || !model) {
+                showMessageBox("Error", "La Marca y el Modelo son obligatorios.");
+                return;
+            }
+            
+            window.closeCollectionModal();
+
+            if (userId === 'SIMULADO') {
+                 showMessageBox("Guardado Simulado", `Reloj (${brand} ${model}) guardado. Esto funcionaría con Firebase si estuviera configurado.`);
+                 return;
+            }
+            
+            try {
+                const collectionRef = collection(db, getPrivateCollectionPath('watches'));
+                await addDoc(collectionRef, {
+                    brand: brand,
+                    model: model,
+                    year: year,
+                    notes: notes,
+                    addedOn: new Date().toISOString(),
+                    ownerId: userId
+                });
+                showMessageBox("Éxito", `El reloj '${brand} ${model}' ha sido añadido a tu colección.`);
+            } catch (error) {
+                console.error("Error al guardar el reloj:", error);
+                showMessageBox("Error de Guardado", `No se pudo guardar el reloj. Mensaje: ${error.message}`);
             }
         };
 
         // --- Lógica de Idioma ---
 
-        const setLanguage = (lang) => {
-            currentLanguage = lang;
-            console.log(`Idioma cambiado a: ${currentLanguage}. (Simulación de cambio de UI).`);
-            showMessageBox("Cambio de Idioma", `Se ha seleccionado el idioma: ${lang.toUpperCase()}. En una aplicación completa, la UI se traduciría ahora.`);
+        const languageDropdown = document.getElementById('languageDropdown');
+        if (languageDropdown) {
+             languageDropdown.addEventListener('change', (e) => {
+                const lang = e.target.value;
+                currentLanguage = lang;
+                console.log(`Idioma cambiado a: ${currentLanguage}. (Simulación de cambio de UI).`);
+                showMessageBox("Cambio de Idioma", `Se ha seleccionado el idioma: ${lang.toUpperCase()}. En una aplicación completa, la UI se traduciría ahora.`);
+            });
         }
+
 
         // --- Renderizado de Vistas ---
 
         const renderLoginScreen = () => {
             hideLoading();
+            updateHeaderButtons(false);
             const contentDiv = document.getElementById('content');
             
             contentDiv.innerHTML = `
-                <div class="auth-card bg-card-bg p-8 rounded-xl shadow-lg mt-8">
-                    <h2 class="text-2xl font-semibold text-center mb-6 text-white">Ingresar a WatchNow</h2>
+                <div class="auth-card p-8 rounded-xl shadow-lg mt-8">
+                    <h2 class="text-2xl font-semibold text-center mb-6" style="color: var(--silver-chrome);">Ingresar a WatchNow</h2>
                     
                     <div class="space-y-4">
                         <input type="email" id="emailInput" placeholder="Correo Electrónico"
-                               class="w-full px-4 py-3 bg-card-bg border border-input-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
                                autocomplete="email">
                         
                         <input type="password" id="passwordInput" placeholder="Contraseña"
-                               class="w-full px-4 py-3 bg-card-bg border border-input-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
                                autocomplete="current-password">
                         
-                        <!-- Botón de Iniciar Sesión -->
+                        <!-- Botón de Iniciar Sesión (Plata CTA - Letras Negras) -->
                         <button id="loginButton"
-                                class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-2">
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-2 chrome-button">
                             Iniciar Sesión
                         </button>
 
-                        <!-- Botón de Crear Cuenta -->
+                        <!-- Botón de Crear Cuenta (Plata CTA - Letras Negras) -->
                         <button id="createAccountButton"
-                                class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button">
                             Crear Cuenta
                         </button>
                     </div>
 
                     <div class="flex items-center my-6">
-                        <div class="flex-grow border-t border-gray-600"></div>
-                        <span class="flex-shrink mx-4 text-gray-500">-- o --</span>
-                        <div class="flex-grow border-t border-gray-600"></div>
+                        <div class="flex-grow border-t" style="border-color: #666666;"></div>
+                        <span class="flex-shrink mx-4 text-gray-300">-- o --</span>
+                        <div class="flex-grow border-t" style="border-color: #666666;"></div>
                     </div>
 
                     <div class="space-y-3">
-                        <!-- Botones de terceros (Simulados) -->
+                        <!-- Botones de terceros (Plata CTA - Letras Negras) -->
                         <button id="googleButton" 
-                                class="w-full bg-google-btn hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out">
+                                class="w-full font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out chrome-button">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_and_wordmark_of_Google_G_Suite.svg" alt="Google" class="w-5 h-5 mr-3 bg-white rounded-full">
                             Google
                         </button>
                         <button id="facebookButton"
-                                class="w-full bg-facebook-btn hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out">
-                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                class="w-full font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out chrome-button">
+                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" style="color: var(--text-on-silver);">
                                 <path d="M14.07,10.37h2.09l0.31-2.09h-2.4c-0.62,0-1.11-0.49-1.11-1.11v-1.42h3.42V3.41H12.9v1.94c-1.42,0-2.56,1.14-2.56,2.56v1.47h-2.09v2.09h2.09v6.52c0,0.61,0.5,1.11,1.11,1.11h3.42c0.61,0,1.11-0.5,1.11-1.11v-6.52h-2.09V10.37z"/>
                             </svg>
                             Facebook
                         </button>
                     </div>
                     
-                    <button id="anonymousButton" class="w-full text-sm text-gray-500 hover:text-gray-400 mt-6 transition duration-150 ease-in-out">
-                        Continuar como Anónimo
+                    <!-- Botón Anónimo: Texto en color Plata Brillante para contraste -->
+                    <button id="anonymousButton" class="w-full text-sm hover:text-white mt-6 transition duration-150 ease-in-out" style="color: var(--silver-chrome);">
+                        Continuar como Anónimo (Acceso Rápido)
                     </button>
                 </div>
             `;
@@ -251,55 +409,93 @@
             document.getElementById('loginButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('login'); });
             document.getElementById('createAccountButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('register'); });
             document.getElementById('anonymousButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
-            document.getElementById('googleButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
+            document.getElementById('googleButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); }); 
             document.getElementById('facebookButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
         };
         
         const renderAppScreen = () => {
             hideLoading();
+            updateHeaderButtons(true); // Mostrar Cerrar Sesión
             const contentDiv = document.getElementById('content');
+            
             contentDiv.innerHTML = `
                 <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-200 mb-2">WatchNow</h1>
-                    <p class="text-sm text-gray-400 mb-8">Identificación y Valoración de Relojes con IA</p>
+                    <h1 class="text-3xl font-bold mb-2" style="color: var(--silver-chrome);">WatchNow</h1>
+                    <p class="text-sm text-gray-300">Coleccionismo, Identificación y Comunidad</p>
                 </div>
+                
+                <div class="auth-card p-8 rounded-xl shadow-lg w-full max-w-sm">
+                    <p class="text-gray-200 mb-4 text-center">
+                        ID de Sesión: <span class="text-sm font-mono session-id">${userId || 'Cargando...'}</span>
+                    </p>
 
-                <div class="bg-card-bg p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
-                    <div class="mb-6">
-                        <p class="text-gray-400 mb-4">
-                            ¡Bienvenido, Usuario!
-                            <br>
-                            ID de Sesión: <span class="text-sm font-mono text-blue-400">${userId || 'Cargando...'}</span>
-                        </p>
-                        <div class="text-4xl text-gray-500 mx-auto w-16 h-16 flex items-center justify-center bg-input-border rounded-full cursor-pointer hover:bg-gray-700 transition duration-150">
-                            <span class="pointer-events-none">📷</span>
+                    <!-- Botón Principal: Escanear Reloj -->
+                    <div class="mb-8">
+                        <div class="text-4xl mx-auto w-16 h-16 flex items-center justify-center rounded-full cursor-pointer hover:opacity-80 transition duration-150"
+                             style="background-color: var(--rolex-green-light); border: 2px solid var(--silver-chrome); color: var(--silver-chrome);">
+                            <i data-lucide="camera" class="w-8 h-8 pointer-events-none"></i>
                         </div>
-                        <p class="text-gray-400 mt-3">
-                            Toca para seleccionar una imagen clara del reloj
+                        <button id="scanButton"
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-4 chrome-button">
+                            Escanear Reloj
+                        </button>
+                        <p class="text-xs mt-2" style="color: var(--secondary-accent);">
+                            La función de IA requiere una clave API configurada.
                         </p>
                     </div>
 
-                    <button id="analyzeButton"
-                            class="w-full bg-primary-btn hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
-                        Analizar y Buscar Historia
-                    </button>
-                    
-                    <button id="logoutButton"
-                            class="w-full mt-4 bg-secondary-btn hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-150 ease-in-out">
-                        Cerrar Sesión
-                    </button>
+                    <!-- Navegación de Opciones Adicionales -->
+                    <div class="space-y-4">
+                        <!-- Mi Colección -->
+                        <button id="collectionButton"
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                            <span>Mi Colección</span>
+                        </button>
+
+                        <!-- Comunidad (Chat) -->
+                        <button id="communityButton"
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
+                            <i data-lucide="message-square-text" class="w-5 h-5"></i>
+                            <span>Comunidad (Chat)</span>
+                        </button>
+
+                        <!-- Favoritos -->
+                        <button id="favoritesButton"
+                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
+                            <i data-lucide="heart" class="w-5 h-5"></i>
+                            <span>Favoritos</span>
+                        </button>
+                        
+                    </div>
                 </div>
             `;
             
-            document.getElementById('logoutButton').addEventListener('click', handleLogout);
-            document.getElementById('analyzeButton').addEventListener('click', () => {
-                showMessageBox("Función de IA", "Esta función usaría la API de Google Gemini para analizar la imagen del reloj y buscar su información histórica.");
+            // Re-renderizar iconos después de cargar el HTML interno
+            lucide.createIcons();
+            
+            // Asignar Event Listeners
+            document.getElementById('scanButton').addEventListener('click', () => {
+                showMessageBox("Función de IA", "Se activaría el escáner de imagen para identificación.");
+            });
+            document.getElementById('collectionButton').addEventListener('click', window.openCollectionModal);
+            document.getElementById('communityButton').addEventListener('click', () => {
+                showMessageBox("Comunidad", "Esta sección permitiría chatear y compartir con otros coleccionistas.");
+            });
+            document.getElementById('favoritesButton').addEventListener('click', () => {
+                showMessageBox("Favoritos", "Esta sección mostraría los relojes que has marcado como tus favoritos.");
             });
         };
 
         // --- Lógica de Autenticación (Manejando Email/Password) ---
 
         const handleAuth = async (mode) => {
+            // Verificar si estamos en modo simulación (útil para GitHub Pages)
+            if (userId === 'SIMULADO') {
+                 showMessageBox("Advertencia de Simulación", "Estás en modo simulación. Usa 'Continuar como Anónimo' para probar la UI.");
+                 return;
+            }
+            
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
             
@@ -324,6 +520,12 @@
         
         // Lógica de Login Anónimo (para el botón "Continuar como Anónimo")
         const handleAnonymousLogin = async () => {
+             // Si estamos en modo simulación, simplemente renderiza la pantalla de la App.
+            if (userId === 'SIMULADO') {
+                renderAppScreen();
+                return;
+            }
+            
             try {
                 if (isAuthReady && userId) {
                      renderAppScreen();
@@ -337,6 +539,13 @@
         };
 
         const handleLogout = async () => {
+            // No intentar cerrar sesión si estamos en modo simulación (simplemente redirige al login)
+            if (userId === 'SIMULADO') {
+                userId = null;
+                renderLoginScreen();
+                return;
+            }
+            
             try {
                 await signOut(auth);
             } catch (error) {
@@ -349,36 +558,42 @@
         // --- Inicialización de Firebase y Autenticación (Punto de Conexión) ---
 
         const initializeAppAndAuth = async () => {
-            // Asignar eventos de idioma (Ahora que son estáticos, se asignan aquí una sola vez)
-            document.getElementById('lang-es').addEventListener('click', (e) => { e.preventDefault(); setLanguage('es'); });
-            document.getElementById('lang-en').addEventListener('click', (e) => { e.preventDefault(); setLanguage('en'); });
+            
+            // Asignar listener de cerrar sesión al botón del header
+            const logoutButton = document.getElementById('logoutButtonHeader');
+            if(logoutButton) logoutButton.addEventListener('click', handleLogout);
             
             try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                     // Si no hay configuración de Firebase, simulamos la conexión
-                    auth = { currentUser: null, signOut: () => console.log('Simulated signOut'), onAuthStateChanged: () => {} };
+                // Verificar si la configuración de Firebase está vacía o es inválida
+                const isFirebaseConfigInvalid = Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId;
+                
+                if (isFirebaseConfigInvalid) {
+                     // --- MODO SIMULACIÓN ---
+                    auth = { currentUser: null, signOut: () => console.log('Simulated signOut'), onAuthStateChanged: (cb) => { 
+                         // Simula un cambio de estado inicial para que la lógica de renderizado se ejecute
+                         setTimeout(() => cb(null), 0); 
+                    }};
                     isAuthReady = true;
                     userId = 'SIMULADO';
                     renderLoginScreen();
-                    showMessageBox("Advertencia", "Firebase no está configurado. Usa 'Continuar como Anónimo' para probar la navegación.");
+                    showMessageBox("Advertencia", "Firebase no está configurado. La aplicación está en **MODO SIMULACIÓN**. Usa 'Continuar como Anónimo' para probar la navegación y el modal de Colección.");
                     return; 
                 }
                 
+                // --- MODO PRODUCCIÓN (Canvas) ---
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // 1. Manejar el estado de autenticación: Esto redirige a la pantalla correcta
+                // 1. Manejar el estado de autenticación: Redirige a la pantalla correcta
                 onAuthStateChanged(auth, (user) => {
                     isAuthReady = true;
                     if (user) {
-                        // Usuario autenticado (ej. login exitoso)
                         userId = user.uid;
                         console.log("Usuario autenticado. UID:", userId);
-                        saveExampleData(); // Guarda datos iniciales
+                        saveExampleData();
                         renderAppScreen();
                     } else {
-                        // Usuario deslogueado (ej. logout)
                         userId = null;
                         console.log("Usuario deslogueado.");
                         renderLoginScreen();
@@ -397,11 +612,12 @@
             } catch (error) {
                 console.error("Error Crítico de Configuración/Inicialización:", error);
                 const contentDiv = document.getElementById('content');
+                updateHeaderButtons(false);
                 contentDiv.innerHTML = `
-                    <div class="bg-red-700 p-6 rounded-xl shadow-lg mt-8 text-white text-center">
-                        <h2 class="text-xl font-bold mb-3">Error de Conexión Crítico</h2>
+                    <div class="p-6 rounded-xl shadow-lg mt-8 text-white text-center" style="background-color: var(--secondary-accent);">
+                        <h2 class="text-xl font-bold mb-3" style="color: var(--silver-chrome);">Error de Conexión Crítico</h2>
                         <p class="mb-4">
-                            La aplicación no pudo inicializar Firebase.
+                            La aplicación no pudo inicializar Firebase. Revise el archivo '__firebase_config' es válido.
                             Mensaje: ${error.message}
                         </p>
                     </div>
