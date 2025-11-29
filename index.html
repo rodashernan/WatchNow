@@ -6,937 +6,412 @@
     <title>WatchNow - Plataforma de Coleccionistas</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome para iconos de proveedores sociales -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Configuración para usar la fuente Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Fuente principal Inter */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        /* Configuración de color para el tema oscuro */
+        :root {
+            --bg-color: #121212; /* Fondo muy oscuro, casi negro */
+            --card-bg: #1e1e1e; /* Fondo de tarjeta un poco más claro */
+            --text-color: #e0e0e0; /* Texto claro */
+            --primary-btn: #1A73E8; /* Azul sobrio para acciones principales (LOGIN) */
+            --secondary-btn: #424242; /* Gris para acciones secundarias */
+            --google-btn: #4285F4; /* Azul de Google */
+            --facebook-btn: #1877F2; /* Azul de Facebook */
+            --input-border: #333333; /* Borde de input */
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #141414; /* Fondo negro suave */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Estilos base para el botón de login */
+        #loginButton {
+            background-color: var(--primary-btn);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #loginButton:hover {
+            background-color: #1558b3; /* Tono más oscuro al pasar el ratón */
+        }
+
+        #loginButton:active {
+            transform: scale(0.98);
+        }
+
+        /* Estilos base para el botón de crear cuenta */
+        #createAccountButton {
+            background-color: var(--secondary-btn);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #createAccountButton:hover {
+            background-color: #505050; /* Tono más claro al pasar el ratón */
+        }
+
+        #createAccountButton:active {
+            transform: scale(0.98);
+        }
+
+        .auth-card {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); /* Sombra suave para el modo oscuro */
         }
         
-        /* Definición del color de acento principal (Rojo Vino/Borgoña) */
-        /* Color de acento: #800020 (Rojo Borgoña) */
-        
-        .container-app {
-            max-width: 600px;
+        /* Estilo para el contenedor central */
+        .container-center {
             min-height: 100vh;
-            padding: 1.5rem;
-        }
-        .card {
-            background-color: #1f1f1f; /* Color de fondo de las tarjetas */
-            border: 1px solid #333333;
-            box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Estilos para el botón principal (Borgoña) */
-        .btn-primary {
-            background-color: #800020; /* Rojo Borgoña */
-            transition: background-color 0.2s;
-        }
-        .btn-primary:hover {
-            background-color: #A30029; /* Borgoña más claro al pasar el ratón */
-        }
-        
-        /* Estilos para el spinner de carga */
-        .spinner {
-            border-top-color: #800020; /* Rojo Borgoña */
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Estilos para la pestaña activa */
-        .tab-active {
-            border-bottom: 2px solid #800020; /* Rojo Borgoña en el borde */
-            color: #800020;
-        }
-        
-        /* Clase para el texto de acento (Borgoña) */
-        .text-accent {
-            color: #800020;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
         }
     </style>
 </head>
-<body class="flex justify-center items-start">
+<body>
 
-    <div class="container-app mx-auto text-white">
-        
-        <!-- Encabezado de la Aplicación -->
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-accent" data-key="app_title">WatchNow</h1>
-            <p class="text-gray-400 text-sm" data-key="app_subtitle">Identificación, Comunidad y Catálogo de Relojes</p>
+    <div id="app" class="container-center">
 
-            <!-- Selector de Idioma -->
-            <div class="mt-2 flex justify-center space-x-2 text-sm">
-                <button onclick="setLanguage('es')" class="text-gray-400 hover:text-white transition duration-150 border-b border-transparent data-[active=true]:border-white" data-lang-btn="es">Español</button>
-                <span class="text-gray-600">|</span>
-                <button onclick="setLanguage('en')" class="text-gray-400 hover:text-white transition duration-150 border-b border-transparent data-[active=true]:border-white" data-lang-btn="en">English</button>
-            </div>
-            
-            <!-- Barra de Navegación principal -->
-            <nav id="mainNav" class="flex justify-between items-center mt-4 card p-3 rounded-lg text-sm hidden">
-                <div class="flex space-x-4">
-                    <button onclick="setView('analyze')" id="navAnalyze" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_analyze">Análisis IA</button>
-                    <button onclick="setView('community')" id="navCommunity" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_community">Comunidad/Mercado</button>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <span id="currentUserDisplay" class="text-gray-400 italic text-xs"></span>
-                    <button onclick="handleSignOut()" class="text-red-400 hover:text-red-500 font-semibold" data-key="nav_signout">Cerrar Sesión</button>
-                </div>
-            </nav>
-        </header>
-
-        <!-- Contenedor Dinámico para las Vistas -->
-        <div id="appContainer">
-            <!-- Mensaje de carga inicial para evitar FOUC -->
-            <div class="text-center py-10 text-gray-500" data-key="loading_app">Cargando aplicación...</div>
+        <!-- Contenedor de Idioma (estático para que los listeners no fallen) -->
+        <div id="languageSelector" class="flex justify-center space-x-4 mb-4 mt-8 w-full max-w-sm">
+            <a href="#" id="lang-es" data-lang="es" class="text-gray-200 hover:text-gray-400 text-lg">Español</a>
+            <span class="text-gray-600">|</span>
+            <a href="#" id="lang-en" data-lang="en" class="text-gray-200 hover:text-gray-400 text-lg">English</a>
         </div>
 
+        <!-- Contenido dinámico (se carga la pantalla de login o la principal) -->
+        <div id="content" class="w-full max-w-sm">
+            <!-- Pantalla de Carga Inicial -->
+            <div id="loadingScreen" class="text-center">
+                <h1 class="text-3xl font-bold text-gray-200 mb-2">WatchNow</h1>
+                <p class="text-sm text-gray-400 mb-8">Identificación, Comunidad y Catálogo de Relojes</p>
+                <div class="animate-pulse text-xl text-gray-500">
+                    Cargando aplicación...
+                </div>
+            </div>
+            
+            <!-- Aquí se insertará la pantalla de Login (por JS) -->
+        </div>
     </div>
 
-    <!-- MÓDULOS Y LÓGICA PRINCIPAL DE JAVASCRIPT -->
+    <!-- Modals y Message Box -->
+    <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div id="messageCard" class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
+            <h3 id="messageTitle" class="text-xl font-bold mb-3 text-gray-900"></h3>
+            <p id="messageBody" class="text-gray-700 mb-5"></p>
+            <button onclick="closeMessageBox()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full">Aceptar</button>
+        </div>
+    </div>
+
     <script type="module">
-        // ===============================================
-        // 1. CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
-        // ===============================================
+        // Importaciones de Firebase (necesarias para la conexión)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, 
-                 GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, setDoc, getDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Habilitar logs de Firebase para depuración
-        setLogLevel('debug');
+        // Habilitar logs para ver el estado de Firebase en la consola (F12)
+        setLogLevel('Debug');
 
-        // Variables Globales de Canvas (MANDATORIAS)
+        // --- Configuración Global de Canvas (OBLIGATORIA) ---
+        // Estas variables se proporcionan automáticamente en el entorno
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // --- INICIO: FIX para Entorno Externo y Manejo de `null` ---
-        let firebaseConfig = {};
-        const CRITICAL_ERROR_MESSAGE = "Error Crítico de Configuración: La aplicación no pudo inicializar Firebase. Revise la Consola (F12).";
-        let isConfigIncomplete = false;
-
-        // **CORRECCIÓN CLAVE:** Aseguramos que la variable exista y no sea la cadena literal "null" antes de intentar parsear.
-        if (typeof __firebase_config !== 'undefined' && __firebase_config !== "null") {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config); 
-            } catch (e) {
-                console.error("ERROR: No se pudo parsear __firebase_config.", e);
-            }
-        } 
         
-        // Si la configuración sigue vacía, asumimos que estamos fuera del entorno Canvas (como GitHub Pages)
-        if (Object.keys(firebaseConfig).length === 0) {
-            console.warn("ADVERTENCIA: Usando configuración de Firebase vacía o de ejemplo.");
-            
-            // =========================================================================================
-            // !!! IMPORTANTE !!! Si estás ejecutando esto fuera de la plataforma Canvas (ej. local o GitHub Pages), 
-            // DEBES REEMPLAZAR los valores a continuación con tu propia configuración de Firebase. 
-            // De lo contrario, el Catálogo, Chat y Auth Social NO funcionarán.
-            // =========================================================================================
-            firebaseConfig = {
-              apiKey: "TU_API_KEY_DE_FIREBASE", // <<<<<<< REEMPLAZAR
-              authDomain: "TU_AUTH_DOMAIN", // <<<<<<< REEMPLAZAR
-              projectId: "TU_PROJECT_ID", // <<<<<<< REEMPLAZAR
-              storageBucket: "TU_STORAGE_BUCKET", // <<<<<<< REEMPLAZAR
-              messagingSenderId: "TU_MESSAGING_SENDER_ID", // <<<<<<< REEMPLAZAR
-              appId: "TU_APP_ID" // <<<<<<< REEMPLAZAR
-            };
-            
-            if (firebaseConfig.projectId.startsWith("TU_")) {
-                 isConfigIncomplete = true;
-                 console.warn("ADVERTENCIA: Configuración de Firebase incompleta. El Catálogo, Chat y Auth social NO funcionarán.");
-            }
-        }
-        // --- FIN: FIX para Entorno Externo y Manejo de `null` ---
-
-        // Inicialización de Firebase
         let app, db, auth;
-        try {
-            if (isConfigIncomplete) {
-                console.warn("Intentando inicializar Firebase con configuración incompleta...");
-            }
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch (error) {
-            console.error("Fallo crítico al inicializar Firebase:", error);
-            // Mostrar error crítico en la UI
-            document.getElementById('appContainer').innerHTML = renderCriticalError(CRITICAL_ERROR_MESSAGE + " Mensaje: " + error.message);
-            db = null;
-            auth = null;
-        }
-        
-        // ===============================================
-        // 2. ESTADO GLOBAL DE LA APLICACIÓN
-        // ===============================================
-        let currentView = 'loading'; // 'loading', 'auth', 'analyze', 'community'
         let userId = null;
-        let userName = null;
-        let isAuthReady = false; // Bandera para saber si el chequeo inicial de Auth ha terminado
-        let currentLang = 'es'; // Idioma por defecto
-        let base64Image = null; // Para la función de análisis
-        let communityTab = 'catalog'; // 'catalog', 'chat'
+        let isAuthReady = false;
+        let currentLanguage = 'es'; // Estado global del idioma
+
+        // --- Funciones de Utilidad de UI ---
         
-        // API de Vision AI (Debe ser una clave con acceso a Vision AI)
-        // Usamos una clave de ejemplo; el usuario final debe tener una real.
-        const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
-        const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
-        
-        // ===============================================
-        // 3. i18n: TRADUCCIONES
-        // ===============================================
-        const translations = {
-            es: {
-                app_title: "WatchNow",
-                app_subtitle: "Identificación, Comunidad y Catálogo de Relojes",
-                loading_app: "Cargando aplicación...",
-                error_auth_fail: "Error Crítico de Autenticación. Por favor, revise la Consola (F12).",
-                user_anon: "Anónimo",
-                error_403: "❌ ¡ERROR 403! Acceso Denegado. Verifique la clave de API.",
-                nav_analyze: "Análisis IA",
-                nav_community: "Comunidad/Mercado",
-                nav_signout: "Cerrar Sesión",
-                error_upload: "Error: Seleccione un archivo de imagen válido.",
-                status_loaded: "Imagen cargada. Lista para analizar.",
-                status_analyzing: "Analizando...",
-                status_complete: "Análisis completado. Resultados encontrados.",
-                error_auth: "Error de autenticación. Intente de nuevo.",
-                current_user: "Usuario:",
-                tab_catalog: "Catálogo",
-                tab_chat: "Chat Comunitario",
-                login_title: "Ingresar a WatchNow",
-                login_email: "Correo Electrónico",
-                login_password: "Contraseña",
-                login_button: "Iniciar Sesión",
-                signup_button: "Crear Cuenta",
-                login_anon_button: "Continuar como Anónimo",
-                login_with_google: "Google",
-                login_with_facebook: "Facebook",
-                select_image_prompt: "Toca para seleccionar una imagen clara del reloj",
-                analyze_button: "Analizar Reloj y Buscar",
-                results_title: "Resultados del Análisis",
-                ident_ia: "Identificación IA:",
-                model_estimated: "Modelo Estimado (Catálogo):",
-                caliber: "Calibre / Movimiento:",
-                price_range: "Precio Estimado (Rango USD):",
-                history_summary: "Resumen Histórico:",
-                catalog_title: "Catálogo de Relojes Comunitario",
-                catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj.",
-                send_button: "Enviar",
-                chat_placeholder: "Escribe tu mensaje...",
-            },
-            en: {
-                app_title: "WatchNow",
-                app_subtitle: "Watch Identification, Community, and Catalog",
-                loading_app: "Loading application...",
-                error_auth_fail: "Critical Authentication Error. Please check the Console (F12).",
-                user_anon: "Anonymous",
-                error_403: "❌ ERROR 403! Access Denied. Check API key.",
-                nav_analyze: "AI Analysis",
-                nav_community: "Community/Market",
-                nav_signout: "Sign Out",
-                error_upload: "Error: Select a valid image file.",
-                status_loaded: "Image loaded. Ready to analyze.",
-                status_analyzing: "Analyzing...",
-                status_complete: "Analysis complete. Results found.",
-                error_auth: "Authentication error. Try again.",
-                current_user: "User:",
-                tab_catalog: "Catalog",
-                tab_chat: "Community Chat",
-                login_title: "Sign in to WatchNow",
-                login_email: "Email",
-                login_password: "Password",
-                login_button: "Sign In",
-                signup_button: "Sign Up",
-                login_anon_button: "Continue Anonymously",
-                login_with_google: "Google",
-                login_with_facebook: "Facebook",
-                select_image_prompt: "Tap to select a clear watch image",
-                analyze_button: "Analyze Watch & Search",
-                results_title: "Analysis Results",
-                ident_ia: "AI Identification:",
-                model_estimated: "Estimated Model (Catalog):",
-                caliber: "Caliber / Movement:",
-                price_range: "Estimated Price (USD Range):",
-                history_summary: "Historical Summary:",
-                catalog_title: "Community Watch Catalog",
-                catalog_prompt: "Explore the collection or use AI Analysis to identify a watch.",
-                send_button: "Send",
-                chat_placeholder: "Type your message...",
-            }
+        window.closeMessageBox = () => {
+            document.getElementById('messageBox').classList.add('hidden');
+            document.getElementById('messageBox').classList.remove('flex');
         };
 
-        function T(key) {
-            return translations[currentLang][key] || key;
+        const showMessageBox = (title, body) => {
+            document.getElementById('messageTitle').textContent = title;
+            document.getElementById('messageBody').textContent = body;
+            document.getElementById('messageBox').classList.remove('hidden');
+            document.getElementById('messageBox').classList.add('flex');
+        };
+
+        const hideLoading = () => {
+            const loading = document.getElementById('loadingScreen');
+            if (loading) loading.classList.add('hidden');
         }
 
-        function setLanguage(lang) {
-            currentLang = lang;
-            localStorage.setItem('watchnow_lang', lang);
-            updateUI();
+        const showLoading = () => {
+            const loading = document.getElementById('loadingScreen');
+            if (loading) loading.classList.remove('hidden');
+        }
+
+        // --- Funciones de Interacción de Firestore ---
+
+        const getPrivateCollectionPath = (collectionName) => {
+            // Ruta obligatoria para datos privados del usuario
+            return `/artifacts/${appId}/users/${userId}/${collectionName}`;
+        }
+
+        const getPublicCollectionPath = (collectionName) => {
+            // Ruta obligatoria para datos públicos o compartidos
+            return `/artifacts/${appId}/public/data/${collectionName}`;
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedLang = localStorage.getItem('watchnow_lang');
-            if (savedLang && translations[savedLang]) {
-                currentLang = savedLang;
-            }
-            // Primera actualización para asegurar la traducción inicial
-            updateUI(); 
-        });
-
-        function applyTranslations() {
-            document.querySelectorAll('[data-key]').forEach(el => {
-                const key = el.getAttribute('data-key');
-                el.textContent = T(key);
-            });
-            const chatInput = document.getElementById('chatInput');
-            if (chatInput) chatInput.placeholder = T('chat_placeholder');
-        }
-
-        // ===============================================
-        // 4. LÓGICA DE AUTENTICACIÓN
-        // ===============================================
-
-        async function attemptSignIn() {
+        // Función para guardar un documento de ejemplo al iniciar sesión
+        const saveExampleData = async () => {
+            if (!db || !userId) return;
+            const docRef = doc(db, getPrivateCollectionPath('user_data'), 'profile');
             try {
-                if (!auth) return; 
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    console.log("Autenticación exitosa con token personalizado.");
-                } else {
-                    await signInAnonymously(auth);
-                    console.log("Autenticación exitosa anónima.");
-                }
+                // Guarda la información del usuario anónimo
+                await setDoc(docRef, { 
+                    username: 'AnonUser_' + userId.substring(0, 8),
+                    lastLogin: new Date().toISOString()
+                }, { merge: true });
+                console.log("Datos de ejemplo guardados exitosamente.");
             } catch (error) {
-                console.error("ERROR CRÍTICO: Fallo al intentar iniciar sesión con Firebase Auth.", error);
-            }
-        }
-        
-        // Solo suscribirse a onAuthStateChanged si `auth` está disponible
-        if (auth) {
-            onAuthStateChanged(auth, (user) => {
-                if (!isAuthReady) {
-                    isAuthReady = true; 
-                    attemptSignIn();
-                }
-
-                if (user) {
-                    userId = user.uid;
-                    // Usar displayName si existe, sino el email (recortado) o Anónimo
-                    let display = user.displayName;
-                    if (!display && user.email) {
-                        display = user.email.split('@')[0];
-                    } else if (!display) {
-                        display = T('user_anon');
-                    }
-                    userName = display;
-                    
-                    if (currentView === 'loading' || currentView === 'auth') {
-                        currentView = 'analyze'; 
-                    }
-                    
-                    // Inicializamos el catálogo solo después de la autenticación
-                    initializeCatalogData(); 
-                } else {
-                    userId = null;
-                    userName = null;
-                    currentView = 'auth';
-                }
-                updateUI();
-            }, (error) => {
-                isAuthReady = true;
-                // Si hay un error de autenticación (ej. token inválido), mostramos el error crítico
-                document.getElementById('appContainer').innerHTML = renderCriticalError(T('error_auth_fail') + " Detalles: " + error.message);
-                updateUI();
-            });
-        } else {
-            isAuthReady = true;
-            currentView = 'auth';
-            document.addEventListener('DOMContentLoaded', updateUI);
-        }
-        
-        window.handleSignOut = async () => { if (auth) await signOut(auth); };
-        window.handleAnonSignIn = async () => { if (auth) await signInAnonymously(auth); };
-        
-        window.handleSignIn = async (email, password) => {
-            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                document.getElementById('authError').textContent = ''; 
-            } catch (error) {
-                document.getElementById('authError').textContent = T('error_auth');
+                console.error("Error al guardar datos de ejemplo:", error);
             }
         };
 
-        window.handleSignUp = async (email, password) => {
-            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await updateProfile(userCredential.user, { displayName: email.split('@')[0] });
-                document.getElementById('authError').textContent = '';
-            } catch (error) {
-                document.getElementById('authError').textContent = T('error_auth');
-            }
-        };
-        
-        // --- Autenticación con Proveedores Sociales ---
+        // --- Lógica de Idioma ---
 
-        window.handleGoogleSignIn = async () => {
-            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Error al iniciar sesión con Google:", error);
-                document.getElementById('authError').textContent = T('error_auth') + " (Google).";
-            }
-        };
+        const setLanguage = (lang) => {
+            currentLanguage = lang;
+            console.log(`Idioma cambiado a: ${currentLanguage}. (Simulación de cambio de UI).`);
+            showMessageBox("Cambio de Idioma", `Se ha seleccionado el idioma: ${lang.toUpperCase()}. En una aplicación completa, la UI se traduciría ahora.`);
+        }
 
-        window.handleFacebookSignIn = async () => {
-            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
-            const provider = new FacebookAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Error al iniciar sesión con Facebook:", error);
-                document.getElementById('authError').textContent = T('error_auth') + " (Facebook). Asegúrese de haber configurado el App Domain en Facebook Developers.";
-            }
-        };
+        // --- Renderizado de Vistas ---
 
-
-        // ===============================================
-        // 5. LÓGICA DE FIREBASE FIRESTORE (CATÁLOGO Y CHAT)
-        // ===============================================
-
-        const CHAT_COLLECTION_PATH = `artifacts/${appId}/public/data/chat_messages`;
-        const CATALOG_COLLECTION_PATH = `artifacts/${appId}/public/data/watch_catalog`;
-
-        let catalogData = [];
-        let unsubscribeCatalog = null;
-        let unsubscribeChat = null;
-
-        function setupCatalogListener() {
-            if (unsubscribeCatalog) unsubscribeCatalog();
-            if (!userId || !db) return; 
-
-            const q = collection(db, CATALOG_COLLECTION_PATH);
+        const renderLoginScreen = () => {
+            hideLoading();
+            const contentDiv = document.getElementById('content');
             
-            unsubscribeCatalog = onSnapshot(q, (snapshot) => {
-                catalogData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentView === 'community' && communityTab === 'catalog') {
-                    renderCatalog();
-                }
-            }, (error) => {
-                console.error("Error al escuchar el catálogo (Reglas de Seguridad):", error);
-            });
-        }
-
-        function setupChatListener() {
-            if (unsubscribeChat) unsubscribeChat();
-            if (!userId || !db) return; 
-
-            const chatContainer = document.getElementById('chatMessages');
-            if (!chatContainer) return;
-
-            const q = collection(db, CHAT_COLLECTION_PATH);
-            
-            unsubscribeChat = onSnapshot(q, (snapshot) => {
-                let messages = snapshot.docs.map(doc => doc.data());
-                // Ordenar en memoria por timestamp (ascendente para el chat)
-                messages.sort((a, b) => (a.timestamp && b.timestamp) ? a.timestamp.seconds - b.timestamp.seconds : 0);
-                renderChatMessages(messages);
-            }, (error) => {
-                console.error("Error al escuchar el chat (Reglas de Seguridad):", error);
-                if(document.getElementById('chatMessages')) {
-                    document.getElementById('chatMessages').innerHTML = `<p class="text-red-400 p-4">${T('error_auth')}: No se pudo cargar el chat.</p>`;
-                }
-            });
-        }
-
-        window.handleSendMessage = async () => {
-            const chatInput = document.getElementById('chatInput');
-            const messageText = chatInput.value.trim();
-
-            if (!messageText || !userId || !db) {
-                console.warn("No se puede enviar mensaje: texto vacío, usuario no autenticado o DB no inicializada.");
-                return; 
-            }
-
-            try {
-                await addDoc(collection(db, CHAT_COLLECTION_PATH), {
-                    text: messageText,
-                    timestamp: serverTimestamp(),
-                    userId: userId,
-                    userName: userName || T('user_anon')
-                });
-                chatInput.value = '';
-            } catch (e) {
-                console.error("Error al enviar mensaje:", e);
-                displayStatus("Error al enviar el mensaje.", 'text-red-400');
-            }
-        };
-        
-        // ===============================================
-        // 6. LÓGICA DE ANÁLISIS DE IMAGEN (VISION AI)
-        // ===============================================
-
-        window.previewImage = function(event) {
-            const file = event.target.files[0];
-            const inputImage = document.getElementById('inputImage');
-            const analyzeButton = document.getElementById('analyzeButton');
-
-            if (!file) return;
-
-            if (!file.type.startsWith('image/')) {
-                displayStatus(T('error_upload'), 'text-red-400');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                inputImage.src = e.target.result;
-                inputImage.classList.remove('hidden');
-                analyzeButton.disabled = false;
-                // Almacenamos solo la parte base64 de la imagen
-                base64Image = e.target.result.split(',')[1];
-                displayStatus(T('status_loaded'), 'text-gray-400');
-                document.getElementById('resultsSection')?.classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        window.analyzeWatch = async function() {
-            if (!base64Image) { displayStatus(T('error_upload'), 'text-red-400'); return; }
-
-            const analyzeButton = document.getElementById('analyzeButton');
-            const spinner = document.getElementById('spinner');
-            const buttonText = document.getElementById('buttonText');
-            
-            analyzeButton.disabled = true;
-            buttonText.textContent = T('status_analyzing');
-            spinner.classList.remove('hidden');
-            document.getElementById('resultsSection')?.classList.add('hidden');
-            displayStatus("", 'text-gray-400'); 
-
-            // Payload para Google Vision AI: Detección de Etiquetas y Detección Web para identificar el reloj
-            const payload = {
-                requests: [{ image: { content: base64Image }, features: [{ type: "LABEL_DETECTION", maxResults: 5 }, { type: "WEB_DETECTION", maxResults: 10 }] }]
-            };
-
-            try {
-                const response = await fetch(VISION_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.status === 403) {
-                    displayStatus(T('error_403'), 'text-red-500 font-bold');
-                    throw new Error(`Error HTTP 403`);
-                }
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                const data = await response.json();
-                processResults(data);
-
-            } catch (error) {
-                console.error("Error en la llamada a la API:", error);
-                displayStatus("Error de conexión o API. Revise la Consola (F12).", 'text-red-400');
-                updateUIForError();
-            }
-        }
-
-        function processResults(data) {
-            let watchData = null;
-
-            try {
-                const webEntities = data.responses[0].webDetection?.webEntities || [];
-                
-                // Intentar hacer match con el catálogo usando las descripciones de las entidades web
-                if (webEntities.length > 0) {
-                    for (const entity of webEntities) {
-                        const description = entity.description ? entity.description.toLowerCase() : '';
-                        // Buscar si alguna descripción coincide con el ID de un reloj en el catálogo
-                        watchData = catalogData.find(watch => description.includes(watch.id.toLowerCase()));
-                        if (watchData) break;
-                    }
-                }
-                
-                // Si no se encuentra, usar datos genéricos de "No identificado"
-                if (!watchData) {
-                    watchData = {
-                        id: "no_identificado", 
-                        name: "Modelo no identificado", 
-                        caliber: "Desconocido", 
-                        price: "Consultar mercado", 
-                        history: "La IA no pudo vincular la imagen a un modelo específico en nuestro catálogo. Intente con una foto más clara del cuadrante.",
-                        imageUrl: "https://placehold.co/150x150/1f1f1f/AAAAAA?text=?"
-                    };
-                }
-
-                // Actualizar la interfaz de resultados
-                document.getElementById('watchName').textContent = watchData.id.toUpperCase();
-                document.getElementById('modelName').textContent = watchData.name;
-                document.getElementById('caliber').textContent = watchData.caliber;
-                document.getElementById('priceRange').textContent = watchData.price;
-                document.getElementById('historySummary').textContent = watchData.history;
-
-                document.getElementById('resultsSection')?.classList.remove('hidden');
-                displayStatus(T('status_complete'), 'text-accent'); // Usamos el color de acento
-                
-            } catch (e) {
-                console.error("Error al procesar la estructura de datos:", e);
-                displayStatus("Error al procesar los resultados de la IA.", 'text-red-400');
-            } finally {
-                updateUIForSuccess();
-            }
-        }
-        
-        // ===============================================
-        // 7. LÓGICA DE RENDERING Y UTILIDADES
-        // ===============================================
-
-        window.setView = (view) => {
-            if (!isAuthReady) return; 
-            if ((view === 'analyze' || view === 'community') && !userId) view = 'auth';
-            currentView = view;
-            updateUI();
-        };
-
-        window.setCommunityTab = (tab) => {
-            communityTab = tab;
-            updateUI();
-        }
-
-        function displayStatus(message, colorClass) {
-            const statusMessage = document.getElementById('statusMessage');
-            if(statusMessage) {
-                statusMessage.textContent = message;
-                statusMessage.className = `mt-4 text-center text-sm ${colorClass}`;
-                statusMessage.classList.remove('hidden');
-            }
-        }
-
-        function updateUIForError() {
-            const analyzeButton = document.getElementById('analyzeButton');
-            const buttonText = document.getElementById('buttonText');
-            const spinner = document.getElementById('spinner');
-
-            if (analyzeButton) analyzeButton.disabled = false;
-            if (buttonText) buttonText.textContent = T('analyze_button');
-            if (spinner) spinner.classList.add('hidden');
-        }
-
-        function updateUIForSuccess() {
-            updateUIForError();
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function renderCriticalError(message) {
-             currentView = 'error'; 
-             return `
-                <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
-                    <h2 class="text-xl font-bold text-red-400 mb-2">Error de Configuración Crítico</h2>
-                    <p class="text-sm text-red-300">${message}</p>
-                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Si estás en un entorno externo (como GitHub Pages), DEBES reemplazar los valores 'TU_...' en la sección de código JavaScript con tu propia configuración de Firebase. Además, debes habilitar Google y Facebook Auth en la Consola de Firebase.**</p>
-                </div>
-            `;
-        }
-
-        function updateUI() {
-            const appContainer = document.getElementById('appContainer');
-            const mainNav = document.getElementById('mainNav');
-            const currentUserDisplay = document.getElementById('currentUserDisplay');
-
-            if (!isAuthReady || currentView === 'loading') {
-                appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
-                return;
-            }
-            
-            if (currentView === 'error') return;
-
-
-            if (userId) {
-                mainNav.classList.remove('hidden');
-                // Mostramos el ID de usuario completo según las directrices para apps multiusuario.
-                currentUserDisplay.textContent = `${T('current_user')} ${userName} (${userId.substring(0, 8)}...)`;
-                
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('tab-active');
-                });
-                document.getElementById(`nav${currentView.charAt(0).toUpperCase() + currentView.slice(1)}`)?.classList.add('tab-active');
-
-            } else {
-                mainNav.classList.add('hidden');
-                currentView = 'auth';
-            }
-            
-            appContainer.innerHTML = '';
-            
-            if (currentView === 'auth') {
-                appContainer.innerHTML = renderAuthView();
-            } else if (currentView === 'analyze') {
-                appContainer.innerHTML = renderAnalyzeView();
-            } else if (currentView === 'community') {
-                appContainer.innerHTML = renderCommunityView();
-            }
-
-            applyTranslations();
-            
-            if (currentView === 'community') {
-                setupCatalogListener();
-                if (communityTab === 'chat') {
-                    setupChatListener();
-                } else if (communityTab === 'catalog') {
-                    renderCatalog();
-                }
-            } else {
-                // Desuscribirse de listeners si se cambia de vista
-                if (unsubscribeCatalog) { unsubscribeCatalog(); unsubscribeCatalog = null; }
-                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
-            }
-            
-            document.querySelectorAll('[data-lang-btn]').forEach(btn => {
-                btn.dataset.active = (btn.getAttribute('data-lang-btn') === currentLang);
-            });
-        }
-        
-        function renderAuthView() {
-            return `
-                <div class="card p-8 rounded-xl max-w-sm mx-auto">
-                    <h2 class="text-xl font-bold text-center mb-6 text-accent" data-key="login_title">Ingresar a WatchNow</h2>
-                    <form id="authForm" onsubmit="return false">
-                        <div class="mb-4">
-                            <label for="email" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_email">Correo Electrónico</label>
-                            <input type="email" id="email" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-accent focus:border-accent">
-                        </div>
-                        <div class="mb-6">
-                            <label for="password" class="block text-gray-400 text-sm font-medium mb-1" data-key="login_password">Contraseña</label>
-                            <input type="password" id="password" required class="w-full px-3 py-2 bg-[#2d333b] border border-gray-600 rounded-lg text-white focus:ring-accent focus:border-accent">
-                        </div>
-                        <p id="authError" class="text-red-400 text-sm text-center mb-4"></p>
-                        
-                        <div class="space-y-3">
-                            <button type="button" onclick="handleSignIn(document.getElementById('email').value, document.getElementById('password').value)" class="w-full btn-primary text-white font-semibold py-2 rounded-lg" data-key="login_button">Iniciar Sesión</button>
-                            <button type="button" onclick="handleSignUp(document.getElementById('email').value, document.getElementById('password').value)" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 rounded-lg transition duration-150" data-key="signup_button">Crear Cuenta</button>
-                            
-                            <div class="text-center text-sm text-gray-500 my-4">-- O --</div>
-
-                            <!-- Botones de Autenticación Social (Usando los colores nativos o neutros para mantener la distinción) -->
-                            <button type="button" onclick="handleGoogleSignIn()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-semibold py-2 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
-                                <i class="fab fa-google"></i>
-                                <span data-key="login_with_google">Google</span>
-                            </button>
-                            <button type="button" onclick="handleFacebookSignIn()" class="w-full bg-[#1877F2] hover:bg-[#156cd4] text-white font-semibold py-2 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
-                                <i class="fab fa-facebook-f"></i>
-                                <span data-key="login_with_facebook">Facebook</span>
-                            </button>
-                            
-                            <button type="button" onclick="handleAnonSignIn()" class="w-full text-gray-400 hover:text-white text-sm py-2" data-key="login_anon_button">Continuar como Anónimo</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-        }
-
-        function renderAnalyzeView() {
-            return `
-                <!-- Contenedor de Análisis IA -->
-                <div class="card p-6 rounded-xl">
-                    <!-- 1. Carga de Imagen -->
-                    <section id="upload-section" class="mb-6">
-                        <label for="fileInput" class="block text-center cursor-pointer p-4 border-2 border-dashed border-gray-600 rounded-lg hover:border-gray-500 transition duration-150">
-                            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 18m-4-12v6m0 0l-3-3m3 3l3-3"/>
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-300" data-key="select_image_prompt">Toca para seleccionar una imagen clara del reloj</p>
-                        </label>
-                        <input type="file" id="fileInput" accept="image/*" onchange="previewImage(event)">
-                        <!-- Imagen de previsualización: usa un placeholder con fondo oscuro compatible con el tema -->
-                        <img id="inputImage" class="hidden mx-auto mt-4 rounded-lg border border-gray-700 w-full max-h-80 object-contain" alt="Imagen de Reloj a analizar" onerror="this.src='https://placehold.co/150x150/1f1f1f/AAAAAA?text=WATCH'">
-                    </section>
-
-                    <!-- 2. Botón de Acción -->
-                    <button id="analyzeButton" onclick="analyzeWatch()" class="w-full btn-primary text-white font-semibold py-3 rounded-lg flex items-center justify-center transition duration-150" disabled>
-                        <span id="buttonText" data-key="analyze_button">Analizar Reloj y Buscar</span>
-                        <div id="spinner" class="spinner w-5 h-5 border-2 border-t-white rounded-full ml-3 hidden"></div>
-                    </button>
-
-                    <!-- 3. Mensaje de Estado / Error -->
-                    <p id="statusMessage" class="mt-4 text-center text-sm text-gray-400 hidden"></p>
-                </div>
-
-                <!-- 4. Sección de Resultados -->
-                <section id="resultsSection" class="mt-8 card p-6 rounded-xl hidden">
-                    <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2" data-key="results_title">Resultados del Análisis</h2>
+            contentDiv.innerHTML = `
+                <div class="auth-card bg-card-bg p-8 rounded-xl shadow-lg mt-8">
+                    <h2 class="text-2xl font-semibold text-center mb-6 text-white">Ingresar a WatchNow</h2>
                     
                     <div class="space-y-4">
-                        <div class="result-item">
-                            <p class="text-gray-400 text-sm" data-key="ident_ia">Identificación IA:</p>
-                            <p id="watchName" class="text-lg font-semibold text-accent">...</p>
-                        </div>
-                        <div class="result-item border-t border-gray-800 pt-4">
-                            <p class="text-gray-400 text-sm" data-key="model_estimated">Modelo Estimado (Catálogo):</p>
-                            <p id="modelName" class="text-base font-medium text-white">--</p>
-                        </div>
-                        <div class="result-item">
-                            <p class="text-gray-400 text-sm" data-key="caliber">Calibre / Movimiento:</p>
-                            <p id="caliber" class="text-base font-medium text-white">--</p>
-                        </div>
-                        <div class="result-item">
-                            <p class="text-gray-400 text-sm" data-key="price_range">Precio Estimado (Rango USD):</p>
-                            <p id="priceRange" class="text-base font-medium text-yellow-500">--</p>
-                        </div>
+                        <input type="email" id="emailInput" placeholder="Correo Electrónico"
+                               class="w-full px-4 py-3 bg-card-bg border border-input-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               autocomplete="email">
+                        
+                        <input type="password" id="passwordInput" placeholder="Contraseña"
+                               class="w-full px-4 py-3 bg-card-bg border border-input-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               autocomplete="current-password">
+                        
+                        <!-- Botón de Iniciar Sesión -->
+                        <button id="loginButton"
+                                class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-2">
+                            Iniciar Sesión
+                        </button>
+
+                        <!-- Botón de Crear Cuenta -->
+                        <button id="createAccountButton"
+                                class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                            Crear Cuenta
+                        </button>
                     </div>
 
-                    <div class="result-item border-t border-gray-800 pt-4 mt-4">
-                        <p class="text-gray-400 text-sm" data-key="history_summary">Resumen Histórico:</p>
-                        <p id="historySummary" class="text-sm leading-relaxed text-gray-300">--</p>
-                    </div>
-                </section>
-            `;
-        }
-
-        function renderCommunityView() {
-            const isCatalogActive = communityTab === 'catalog';
-            const isChatActive = communityTab === 'chat';
-
-            return `
-                <div class="card p-6 rounded-xl">
-                    <!-- Tabs de Comunidad -->
-                    <div class="flex border-b border-gray-700 mb-6">
-                        <button onclick="setCommunityTab('catalog')" class="flex-1 text-center py-2 font-semibold ${isCatalogActive ? 'tab-active' : 'text-gray-400'}" data-key="tab_catalog">Catálogo</button>
-                        <button onclick="setCommunityTab('chat')" class="flex-1 text-center py-2 font-semibold ${isChatActive ? 'tab-active' : 'text-gray-400'}" data-key="tab_chat">Chat Comunitario</button>
+                    <div class="flex items-center my-6">
+                        <div class="flex-grow border-t border-gray-600"></div>
+                        <span class="flex-shrink mx-4 text-gray-500">-- o --</span>
+                        <div class="flex-grow border-t border-gray-600"></div>
                     </div>
 
-                    <!-- Contenido del Tab -->
-                    ${isCatalogActive ? renderCatalogTemplate() : renderChatTemplate()}
+                    <div class="space-y-3">
+                        <!-- Botones de terceros (Simulados) -->
+                        <button id="googleButton" 
+                                class="w-full bg-google-btn hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_and_wordmark_of_Google_G_Suite.svg" alt="Google" class="w-5 h-5 mr-3 bg-white rounded-full">
+                            Google
+                        </button>
+                        <button id="facebookButton"
+                                class="w-full bg-facebook-btn hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out">
+                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14.07,10.37h2.09l0.31-2.09h-2.4c-0.62,0-1.11-0.49-1.11-1.11v-1.42h3.42V3.41H12.9v1.94c-1.42,0-2.56,1.14-2.56,2.56v1.47h-2.09v2.09h2.09v6.52c0,0.61,0.5,1.11,1.11,1.11h3.42c0.61,0,1.11-0.5,1.11-1.11v-6.52h-2.09V10.37z"/>
+                            </svg>
+                            Facebook
+                        </button>
+                    </div>
+                    
+                    <button id="anonymousButton" class="w-full text-sm text-gray-500 hover:text-gray-400 mt-6 transition duration-150 ease-in-out">
+                        Continuar como Anónimo
+                    </button>
                 </div>
             `;
-        }
-        
-        function renderCatalogTemplate() {
-            return `
-                <h2 class="text-xl font-bold mb-4 text-accent" data-key="catalog_title">Catálogo de Relojes Comunitario</h2>
-                <p class="text-gray-400 text-sm mb-4" data-key="catalog_prompt">Explora la colección o usa el Análisis IA para identificar un reloj.</p>
-                <div id="catalogList" class="space-y-4">
-                    <!-- Los relojes del Catálogo se renderizarán aquí -->
-                    <p class="text-gray-500 text-center">Cargando catálogo...</p>
-                </div>
-            `;
-        }
-        
-        function renderChatTemplate() {
-            return `
-                <h2 class="text-xl font-bold mb-4 text-accent" data-key="chat_title">Chat de Coleccionistas</h2>
-                
-                <!-- Contenedor de Mensajes -->
-                <div id="chatMessages" class="h-80 overflow-y-auto p-3 mb-4 card border-none bg-[#141414]/50 flex flex-col space-y-3">
-                    <p class="text-gray-500 text-center">Cargando mensajes...</p>
-                </div>
-                
-                <!-- Formulario de Chat -->
-                <div class="flex space-x-2">
-                    <input type="text" id="chatInput" placeholder="${T('chat_placeholder')}" onkeydown="if(event.key === 'Enter') handleSendMessage()" 
-                           class="flex-grow px-4 py-2 bg-[#2d333b] border border-gray-600 rounded-full text-white focus:ring-accent focus:border-accent">
-                    <button onclick="handleSendMessage()" class="btn-primary text-white font-semibold px-4 py-2 rounded-full flex-shrink-0" data-key="send_button">Enviar</button>
-                </div>
-            `;
-        }
-
-        function renderCatalog() {
-            const catalogList = document.getElementById('catalogList');
-            if (!catalogList) return;
-
-            if (catalogData.length === 0) {
-                 catalogList.innerHTML = `<p class="text-gray-500 text-center">${T('catalog_prompt')}</p>`;
-                 return;
-            }
             
-            catalogList.innerHTML = catalogData.map(watch => `
-                <div class="flex items-start space-x-4 p-3 border border-gray-700 rounded-lg hover:bg-[#252525] transition duration-150">
-                    <img src="${watch.imageUrl || 'https://placehold.co/80x80/141414/333333?text=WATCH'}" class="w-16 h-16 rounded-lg object-cover border border-gray-600" alt="Reloj ${watch.name}">
-                    <div class="flex-grow">
-                        <h3 class="text-lg font-semibold text-accent">${watch.name} (${watch.id.toUpperCase()})</h3>
-                        <p class="text-sm text-gray-300">Calibre: ${watch.caliber}</p>
-                        <p class="text-sm text-yellow-500 font-medium">Precio Est.: ${watch.price}</p>
-                        <p class="text-xs text-gray-500 mt-1">${watch.history.substring(0, 70)}...</p>
-                    </div>
-                </div>
-            `).join('');
-        }
+            // Asignar Event Listeners para la autenticación
+            document.getElementById('loginButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('login'); });
+            document.getElementById('createAccountButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('register'); });
+            document.getElementById('anonymousButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
+            document.getElementById('googleButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
+            document.getElementById('facebookButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
+        };
         
-        function renderChatMessages(messages) {
-            const chatContainer = document.getElementById('chatMessages');
-            if (!chatContainer) return;
+        const renderAppScreen = () => {
+            hideLoading();
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-200 mb-2">WatchNow</h1>
+                    <p class="text-sm text-gray-400 mb-8">Identificación y Valoración de Relojes con IA</p>
+                </div>
 
-            const shouldScroll = chatContainer.scrollTop + chatContainer.clientHeight >= chatContainer.scrollHeight - 50; 
-
-            chatContainer.innerHTML = messages.map(msg => {
-                const isUser = msg.userId === userId;
-                const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString(currentLang) : '...';
-                
-                return `
-                    <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
-                        <div class="max-w-xs md:max-w-md p-3 rounded-xl shadow-md ${isUser ? 'bg-[#800020]' : 'bg-[#2d333b]'}">
-                            <div class="text-xs font-bold ${isUser ? 'text-white' : 'text-accent'} mb-1">${msg.userName}</div>
-                            <p class="text-sm text-white">${msg.text}</p>
-                            <div class="text-right text-xs mt-1 ${isUser ? 'text-gray-200' : 'text-gray-400'}">${time}</div>
+                <div class="bg-card-bg p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
+                    <div class="mb-6">
+                        <p class="text-gray-400 mb-4">
+                            ¡Bienvenido, Usuario!
+                            <br>
+                            ID de Sesión: <span class="text-sm font-mono text-blue-400">${userId || 'Cargando...'}</span>
+                        </p>
+                        <div class="text-4xl text-gray-500 mx-auto w-16 h-16 flex items-center justify-center bg-input-border rounded-full cursor-pointer hover:bg-gray-700 transition duration-150">
+                            <span class="pointer-events-none">📷</span>
                         </div>
+                        <p class="text-gray-400 mt-3">
+                            Toca para seleccionar una imagen clara del reloj
+                        </p>
                     </div>
-                `;
-            }).join('');
+
+                    <button id="analyzeButton"
+                            class="w-full bg-primary-btn hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                        Analizar y Buscar Historia
+                    </button>
+                    
+                    <button id="logoutButton"
+                            class="w-full mt-4 bg-secondary-btn hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-150 ease-in-out">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            `;
             
-            if (shouldScroll) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        }
+            document.getElementById('logoutButton').addEventListener('click', handleLogout);
+            document.getElementById('analyzeButton').addEventListener('click', () => {
+                showMessageBox("Función de IA", "Esta función usaría la API de Google Gemini para analizar la imagen del reloj y buscar su información histórica.");
+            });
+        };
 
+        // --- Lógica de Autenticación (Manejando Email/Password) ---
 
-        // ===============================================
-        // 8. SETUP INICIAL DE LA APP Y DATA MOCK
-        // ===============================================
-
-        async function initializeCatalogData() {
-             const MOCK_CATALOG = [
-                { id: "rolex submariner", name: "Rolex Submariner Date", caliber: "Calibre 3235", price: "USD 12,000 - 18,000", history: "Lanzado en 1953, fue el primer reloj de buceo resistente al agua hasta 100 metros. Es un ícono de durabilidad y diseño, popularizado por exploradores y James Bond.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=SUB" },
-                { id: "omega speedmaster", name: "Omega Speedmaster Professional", caliber: "Calibre 1861/3861 (Manual)", price: "USD 5,500 - 8,000", history: "Conocido como el 'Moonwatch' por ser el reloj oficial usado por los astronautas de la NASA en la Luna. Es uno de los cronógrafos más probados y fiables de la historia.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=OMGA" },
-                { id: "patek philippe nautilus", name: "Patek Philippe Nautilus 5711", caliber: "Calibre 26-330 S C", price: "USD 70,000 - 150,000+", history: "Diseñado por Gerald Genta en 1976. Su diseño icónico de 'ojo de buey' y su estatus de lujo lo han convertido en uno de los relojes más deseados y difíciles de obtener en el mundo.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=PATEK" },
-                { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/1f1f1f/AAAAAA?text=GRMN" }
-            ];
-
-            if (!db) {
-                console.warn("No se pudo inicializar la data de catálogo: Firebase no está disponible.");
-                catalogData = MOCK_CATALOG;
-                if (currentView === 'community' && communityTab === 'catalog') {
-                    renderCatalog();
-                }
+        const handleAuth = async (mode) => {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            if (!email || !password) {
+                showMessageBox("Error de Validación", "Por favor, introduce un correo electrónico y una contraseña.");
                 return;
             }
 
-            const catalogRef = collection(db, CATALOG_COLLECTION_PATH);
             try {
-                const snapshot = await getDocs(query(catalogRef));
-                
-                if (snapshot.empty) {
-                    console.log("Inicializando catálogo con datos de ejemplo...");
-                    for (const watch of MOCK_CATALOG) {
-                        await setDoc(doc(catalogRef, watch.id), watch);
-                    }
+                if (mode === 'register') {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showMessageBox("Registro Exitoso", "¡Tu cuenta ha sido creada y has iniciado sesión!");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showMessageBox("Inicio de Sesión Exitoso", "¡Bienvenido de vuelta!");
                 }
-            } catch (e) {
-                console.error("No se pudo inicializar o acceder al catálogo (Verifique Reglas de Seguridad):", e);
+            } catch (error) {
+                console.error("Error de autenticación:", error);
+                showMessageBox("Error de Autenticación", `No se pudo ${mode === 'register' ? 'crear la cuenta' : 'iniciar sesión'}. Por favor, verifica tus credenciales. Mensaje: ${error.message}`);
             }
-        }
+        };
+        
+        // Lógica de Login Anónimo (para el botón "Continuar como Anónimo")
+        const handleAnonymousLogin = async () => {
+            try {
+                if (isAuthReady && userId) {
+                     renderAppScreen();
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Error al iniciar sesión anónimamente:", error);
+                showMessageBox("Error de Login", `No se pudo continuar como anónimo. Mensaje: ${error.message}`);
+            }
+        };
+
+        const handleLogout = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+                showMessageBox("Error de Cierre de Sesión", `No se pudo cerrar la sesión. Mensaje: ${error.message}`);
+            }
+        };
+
+
+        // --- Inicialización de Firebase y Autenticación (Punto de Conexión) ---
+
+        const initializeAppAndAuth = async () => {
+            // Asignar eventos de idioma (Ahora que son estáticos, se asignan aquí una sola vez)
+            document.getElementById('lang-es').addEventListener('click', (e) => { e.preventDefault(); setLanguage('es'); });
+            document.getElementById('lang-en').addEventListener('click', (e) => { e.preventDefault(); setLanguage('en'); });
+            
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                     // Si no hay configuración de Firebase, simulamos la conexión
+                    auth = { currentUser: null, signOut: () => console.log('Simulated signOut'), onAuthStateChanged: () => {} };
+                    isAuthReady = true;
+                    userId = 'SIMULADO';
+                    renderLoginScreen();
+                    showMessageBox("Advertencia", "Firebase no está configurado. Usa 'Continuar como Anónimo' para probar la navegación.");
+                    return; 
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 1. Manejar el estado de autenticación: Esto redirige a la pantalla correcta
+                onAuthStateChanged(auth, (user) => {
+                    isAuthReady = true;
+                    if (user) {
+                        // Usuario autenticado (ej. login exitoso)
+                        userId = user.uid;
+                        console.log("Usuario autenticado. UID:", userId);
+                        saveExampleData(); // Guarda datos iniciales
+                        renderAppScreen();
+                    } else {
+                        // Usuario deslogueado (ej. logout)
+                        userId = null;
+                        console.log("Usuario deslogueado.");
+                        renderLoginScreen();
+                    }
+                });
+
+                // 2. Intentar autenticar con el token de Canvas o de forma anónima
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Autenticación con token de Canvas exitosa.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Autenticación anónima iniciada.");
+                }
+
+            } catch (error) {
+                console.error("Error Crítico de Configuración/Inicialización:", error);
+                const contentDiv = document.getElementById('content');
+                contentDiv.innerHTML = `
+                    <div class="bg-red-700 p-6 rounded-xl shadow-lg mt-8 text-white text-center">
+                        <h2 class="text-xl font-bold mb-3">Error de Conexión Crítico</h2>
+                        <p class="mb-4">
+                            La aplicación no pudo inicializar Firebase.
+                            Mensaje: ${error.message}
+                        </p>
+                    </div>
+                `;
+            }
+        };
+
+        // Iniciar la aplicación al cargar la ventana
+        window.onload = initializeAppAndAuth;
+        
     </script>
 </body>
 </html>
