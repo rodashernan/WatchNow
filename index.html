@@ -7,54 +7,43 @@
     
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Configuración para usar la fuente Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Iconos de Lucide (usados para navegación) -->
+    <!-- Carga de Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <style>
         /* --- PALETA DE COLORES: VERDE ROLEX Y CROMO BRILLANTE --- */
         :root {
-            --rolex-green-light: #1A522C;  /* Fondo: Verde Rolex claro (botella profundo) */
-            --rolex-green-dark: #0B3419;   /* Fondo de tarjeta: Verde Rolex oscuro */
+            --rolex-green-light: #1A522C;  /* Fondo principal */
+            --rolex-green-dark: #0B3419;   /* Fondo de tarjeta/elementos */
             
             --silver-chrome: #A9A9A9;      /* Plata Brillante (Acento Principal/Botones/Bordes) */
             --text-on-silver: #000000;     /* Texto sobre Plata: Negro */
             --text-base: #FFFFFF;          /* Texto principal: Blanco Puro */
             
-            --secondary-accent: #C70039;   /* Acento Secundario: Rojo Oscuro (para warnings) */
+            --secondary-accent: #C70039;   /* Acento Secundario: Rojo Oscuro */
             --input-bg: #F0F0F0;           
             --input-border: #777777;       
-            --placeholder-color: #666666;  
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--rolex-green-light);
             color: var(--text-base);
-            transition: background-color 0.3s, color 0.3s;
-            /* Borde plateado más grueso y notorio */
             border: 10px solid var(--silver-chrome); 
-            box-shadow: 0 0 30px rgba(169, 169, 169, 0.5); /* Sombra para darle ese brillo de cromo */
+            min-height: 100vh;
         }
 
-        /* Centrar y asegurar el relleno */
+        /* Contenedor central (Ajustado para mejor scroll en móvil) */
         .container-center {
-            min-height: calc(100vh - 20px); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             padding: 1rem;
+            max-width: 1000px;
+            margin: 0 auto;
         }
         
-        /* Estilos para el contenedor principal de Login/App (el cuadro) */
-        .auth-card {
-            background-color: var(--rolex-green-dark); /* Verde oscuro */
+        /* Estilos para la tarjeta central de la aplicación */
+        .app-card {
+            background-color: var(--rolex-green-dark);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); 
-            /* Borde interior Plateado */
             border: 3px solid var(--silver-chrome); 
         }
 
@@ -65,7 +54,6 @@
             font-weight: 700;
             transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
             box-shadow: 0 4px 20px rgba(169, 169, 169, 0.7); 
-            border: 1px solid #FFFFFF; 
         }
 
         .chrome-button:hover {
@@ -75,7 +63,6 @@
 
         .chrome-button:active {
             transform: scale(0.98);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); 
         }
         
         /* Estilos para el botón de Cerrar Sesión (Texto sin cuadro, Plata Brillante) */
@@ -88,99 +75,102 @@
             transition: color 0.2s;
         }
         .header-button:hover {
-            color: #FFFFFF !important; 
+            color: var(--text-base) !important; 
         }
 
-        /* Estilo para los inputs */
-        input {
+        /* Estilos para inputs y dropdown */
+        input, textarea, select {
              background-color: var(--input-bg) !important;
              border-color: var(--input-border) !important;
              color: var(--text-on-silver) !important; 
         }
-        input:focus {
+        input:focus, textarea:focus, select:focus {
             border-color: var(--silver-chrome) !important;
             box-shadow: 0 0 0 1px var(--silver-chrome) !important;
         }
-        
-        /* Estilo para el dropdown de idioma */
-        #languageDropdown {
-            background-color: var(--rolex-green-dark);
-            border: 1px solid var(--silver-chrome);
-            color: var(--silver-chrome);
-        }
-        #languageDropdown:focus {
-             border-color: var(--silver-chrome) !important;
-             box-shadow: 0 0 0 1px var(--silver-chrome) !important;
-        }
 
-        /* Clase para los botones de navegación (iconos) */
-        .nav-button {
-            transition: transform 0.1s, opacity 0.2s;
-            color: var(--silver-chrome);
-            opacity: 0.7;
+        .watch-item {
+            border-left: 4px solid var(--silver-chrome);
+            transition: background-color 0.1s;
         }
-        .nav-button:hover {
-            transform: scale(1.05);
-            opacity: 1;
-            color: var(--text-base);
+        .watch-item:hover {
+            background-color: var(--rolex-green-light);
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--silver-chrome);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
     </style>
 </head>
 <body>
 
-    <div id="app" class="container-center relative">
+    <div id="app" class="relative">
 
-        <!-- Contenedores de Encabezado (Absolutos para esquinas) -->
-        <div class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10">
-            <!-- Menú Desplegable de Idioma -->
-            <select id="languageDropdown" 
-                    class="py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out cursor-pointer">
-                <option value="es">Español</option>
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="de">Deutsch</option>
-            </select>
-        </div>
+        <!-- HEADER: Idioma y Botón de Salir -->
+        <header class="flex justify-between items-center p-4 sm:p-6 sticky top-0 bg-rolex-green-light z-30 shadow-lg" style="background-color: var(--rolex-green-light);">
+            
+            <!-- Selector de Idioma -->
+            <div class="flex items-center space-x-4">
+                <i data-lucide="globe" class="w-6 h-6" style="color: var(--silver-chrome);"></i>
+                <select id="languageDropdown" class="py-2 px-3 rounded-lg text-sm cursor-pointer">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
 
-        <div class="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
-            <!-- Botón de Cerrar Sesión (Se muestra solo si está logueado) -->
-            <button id="logoutButtonHeader" class="header-button hidden">
+            <!-- Botón de Salir (Visible si hay sesión) -->
+            <button id="logoutButtonHeader" class="header-button hidden" onclick="handleLogout()">
                 <i data-lucide="log-out" class="w-5 h-5 inline-block mr-1"></i>
                 Salir
             </button>
-        </div>
+        </header>
 
-        <!-- Contenido dinámico (se carga la pantalla de login o la principal) -->
-        <div id="content" class="w-full max-w-sm">
-            <!-- Pantalla de Carga Inicial -->
-            <div id="loadingScreen" class="text-center">
-                <h1 class="text-3xl font-bold text-text-base mb-2">WatchNow</h1>
-                <p class="text-sm text-gray-300">Identificación, Comunidad y Catálogo de Relojes</p>
-                <div class="animate-pulse text-xl mt-8" style="color: var(--silver-chrome);">
-                    Cargando aplicación...
+
+        <div class="container-center">
+            
+            <!-- Contenido Principal: Login o App -->
+            <div id="content" class="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto py-8">
+                
+                <!-- Pantalla de Carga Inicial -->
+                <div id="loadingScreen" class="text-center pt-20">
+                    <h1 class="text-4xl font-bold text-text-base mb-2">WatchNow</h1>
+                    <p class="text-sm text-gray-300">Coleccionismo, Identificación y Comunidad</p>
+                    <div class="animate-pulse text-xl mt-12" style="color: var(--silver-chrome);">
+                        <i data-lucide="loader" class="w-6 h-6 inline-block animate-spin mr-2"></i> Cargando...
+                    </div>
                 </div>
+                
+                <!-- Las pantallas de Login o App se renderizarán aquí -->
             </div>
             
-            <!-- Aquí se insertará la pantalla de Login o la App principal -->
         </div>
     </div>
 
-    <!-- Modals y Message Box -->
+    <!-- Modals (Mensajes, Colección, Resultado IA) -->
+    
+    <!-- Mensaje Box (Reemplazo de alert/confirm) -->
     <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
         <div id="messageCard" class="p-6 rounded-xl shadow-2xl max-w-sm w-full text-center" style="background-color: var(--rolex-green-dark); border: 3px solid var(--silver-chrome);">
             <h3 id="messageTitle" class="text-xl font-bold mb-3" style="color: var(--silver-chrome);"></h3>
             <p id="messageBody" class="text-gray-200 mb-5"></p>
-            <!-- El botón de aceptación del modal también usa el color Plata -->
             <button onclick="closeMessageBox()" class="chrome-button font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full hover:opacity-80">Aceptar</button>
         </div>
     </div>
     
-    <!-- Modal para Mi Colección (Subir datos del reloj) -->
+    <!-- Modal: Añadir a Colección -->
     <div id="collectionModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
-        <div class="auth-card p-6 rounded-xl shadow-2xl max-w-lg w-full">
+        <div class="app-card p-6 rounded-xl shadow-2xl w-full max-w-lg">
             <h3 class="text-2xl font-bold mb-4" style="color: var(--silver-chrome);">Mi Colección: Nuevo Reloj</h3>
-            <p class="text-gray-300 mb-4">Ingresa la información de tu reloj (simulación de carga).</p>
             
             <div class="space-y-4">
                 <input type="text" id="watchBrand" placeholder="Marca (Ej: Rolex, Omega)" class="w-full px-4 py-3 border rounded-lg">
@@ -200,20 +190,29 @@
         </div>
     </div>
 
+    <!-- Modal: Resultado de Escaneo IA -->
+    <div id="scanResultModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
+        <div class="app-card p-6 rounded-xl shadow-2xl w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-4" style="color: var(--silver-chrome);">Resultado del Escaneo IA</h3>
+            <div id="analysisResultContent" class="bg-gray-800 p-4 rounded-lg text-sm max-h-96 overflow-y-auto space-y-3">
+                <!-- Contenido inyectado por la IA -->
+            </div>
+            <button onclick="closeScanResultModal()" class="chrome-button font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out w-full hover:opacity-80 mt-6">Aceptar</button>
+        </div>
+    </div>
+
 
     <script type="module">
-        // Importaciones de Firebase (necesarias para la conexión)
+        // Importaciones de Firebase (URLs de CDN fijas)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, addDoc, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Habilitar logs para ver el estado de Firebase en la consola (F12)
+        // Habilitar logs
         setLogLevel('Debug');
         
         // Inicializar Lucide Icons después de que el DOM esté disponible
         document.addEventListener('DOMContentLoaded', () => {
-             // Reemplaza los placeholders de iconos SVG
              lucide.createIcons();
         });
 
@@ -226,9 +225,14 @@
         let app, db, auth;
         let userId = null;
         let isAuthReady = false;
-        let currentLanguage = 'es'; // Estado global del idioma
+        
+        // Constantes para la API de Gemini
+        const GEMINI_API_KEY = ""; // Se inyecta automáticamente en Canvas
+        const GEMINI_VISION_MODEL = 'gemini-2.5-flash-preview-09-2025';
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        const MAX_RETRIES = 5;
 
-        // --- Funciones de Utilidad de UI ---
+        // --- Funciones de Utilidad de UI y Modals ---
         
         window.closeMessageBox = () => {
             document.getElementById('messageBox').classList.add('hidden');
@@ -241,11 +245,6 @@
             document.getElementById('messageBox').classList.remove('hidden');
             document.getElementById('messageBox').classList.add('flex');
         };
-
-        const hideLoading = () => {
-            const loading = document.getElementById('loadingScreen');
-            if (loading) loading.classList.add('hidden');
-        }
         
         const updateHeaderButtons = (isLoggedIn) => {
              const logoutButton = document.getElementById('logoutButtonHeader');
@@ -258,34 +257,34 @@
              }
         }
         
+        window.closeScanResultModal = () => {
+            document.getElementById('scanResultModal').classList.add('hidden');
+            document.getElementById('scanResultModal').classList.remove('flex');
+        };
+
+        const showScanResultModal = (contentHtml) => {
+            document.getElementById('analysisResultContent').innerHTML = contentHtml;
+            document.getElementById('scanResultModal').classList.remove('hidden');
+            document.getElementById('scanResultModal').classList.add('flex');
+        };
+
         // --- Funciones de Firestore y Colección ---
 
         const getPrivateCollectionPath = (collectionName) => {
             return `/artifacts/${appId}/users/${userId}/${collectionName}`;
         }
         
-        // Función para guardar un documento de ejemplo al iniciar sesión
-        const saveExampleData = async () => {
-            if (!db || !userId || !auth.currentUser) return;
-            const docRef = doc(db, getPrivateCollectionPath('user_data'), 'profile');
-            try {
-                // Guarda la información del usuario anónimo/autenticado
-                await setDoc(docRef, { 
-                    username: (auth.currentUser.isAnonymous ? 'Anonimo_' : 'Usuario_') + userId.substring(0, 8),
-                    lastLogin: new Date().toISOString(),
-                    email: auth.currentUser.email || 'N/A'
-                }, { merge: true });
-                console.log("Datos de perfil guardados/actualizados exitosamente.");
-            } catch (error) {
-                console.error("Error al guardar datos de ejemplo:", error);
-            }
-        };
-        
         window.openCollectionModal = () => {
-            if (userId === 'SIMULADO' || !isAuthReady) {
+            if (!isAuthReady || !userId) {
                  showMessageBox("Acceso Denegado", "Debes iniciar sesión para gestionar tu Colección.");
                  return;
             }
+            // Limpiar inputs al abrir
+            document.getElementById('watchBrand').value = '';
+            document.getElementById('watchModel').value = '';
+            document.getElementById('watchYear').value = '';
+            document.getElementById('watchNotes').value = '';
+
             document.getElementById('collectionModal').classList.remove('hidden');
             document.getElementById('collectionModal').classList.add('flex');
         }
@@ -308,11 +307,6 @@
             
             window.closeCollectionModal();
 
-            if (userId === 'SIMULADO') {
-                 showMessageBox("Guardado Simulado", `Reloj (${brand} ${model}) guardado. Esto funcionaría con Firebase si estuviera configurado.`);
-                 return;
-            }
-            
             try {
                 const collectionRef = collection(db, getPrivateCollectionPath('watches'));
                 await addDoc(collectionRef, {
@@ -329,203 +323,163 @@
                 showMessageBox("Error de Guardado", `No se pudo guardar el reloj. Mensaje: ${error.message}`);
             }
         };
+        
+        /**
+         * Configura el listener de Firestore para mostrar los relojes en tiempo real.
+         */
+        const setupWatchListener = () => {
+            if (!db || !userId) return; // Esperar a que Firebase esté listo
+            
+            const listContainer = document.getElementById('collectionList');
+            if (!listContainer) return; // Asegurarse de que el elemento existe
 
-        // --- Lógica de Idioma ---
+            const watchesRef = collection(db, getPrivateCollectionPath('watches'));
+            const q = query(watchesRef);
 
-        const languageDropdown = document.getElementById('languageDropdown');
-        if (languageDropdown) {
-             languageDropdown.addEventListener('change', (e) => {
-                const lang = e.target.value;
-                currentLanguage = lang;
-                console.log(`Idioma cambiado a: ${currentLanguage}. (Simulación de cambio de UI).`);
-                showMessageBox("Cambio de Idioma", `Se ha seleccionado el idioma: ${lang.toUpperCase()}. En una aplicación completa, la UI se traduciría ahora.`);
+            // onSnapshot crea una conexión en tiempo real
+            onSnapshot(q, (snapshot) => {
+                listContainer.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    listContainer.innerHTML = `<p class="text-center text-sm text-gray-400 p-4">Aún no tienes relojes. ¡Añade uno!</p>`;
+                    return;
+                }
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const listItem = document.createElement('div');
+                    listItem.className = 'watch-item p-3 mb-2 rounded-lg';
+                    listItem.innerHTML = `
+                        <h4 class="font-bold text-lg" style="color: var(--silver-chrome);">${data.brand} ${data.model}</h4>
+                        <p class="text-sm text-gray-300">Año: ${data.year || 'N/A'}</p>
+                        <p class="text-xs text-gray-400 truncate">${data.notes || 'Sin notas.'}</p>
+                    `;
+                    listContainer.appendChild(listItem);
+                });
+            }, (error) => {
+                console.error("Error al escuchar la colección de relojes:", error);
+                listContainer.innerHTML = 
+                    `<p class="text-center text-sm text-red-400 p-4">Error al cargar la colección: ${error.message}</p>`;
+            });
+        };
+
+        // --- Lógica de la IA (Gemini API) ---
+
+        /** Codifica el archivo de imagen a Base64 */
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
             });
         }
 
+        /**
+         * Maneja la imagen seleccionada y la envía a la IA.
+         */
+        window.handleImageSelect = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        // --- Renderizado de Vistas ---
-
-        const renderLoginScreen = () => {
-            hideLoading();
-            updateHeaderButtons(false);
-            const contentDiv = document.getElementById('content');
-            
-            contentDiv.innerHTML = `
-                <div class="auth-card p-8 rounded-xl shadow-lg mt-8">
-                    <h2 class="text-2xl font-semibold text-center mb-6" style="color: var(--silver-chrome);">Ingresar a WatchNow</h2>
-                    
-                    <div class="space-y-4">
-                        <input type="email" id="emailInput" placeholder="Correo Electrónico"
-                               class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
-                               autocomplete="email">
-                        
-                        <input type="password" id="passwordInput" placeholder="Contraseña"
-                               class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2"
-                               autocomplete="current-password">
-                        
-                        <!-- Botón de Iniciar Sesión (Plata CTA - Letras Negras) -->
-                        <button id="loginButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-2 chrome-button">
-                            Iniciar Sesión
-                        </button>
-
-                        <!-- Botón de Crear Cuenta (Plata CTA - Letras Negras) -->
-                        <button id="createAccountButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button">
-                            Crear Cuenta
-                        </button>
-                    </div>
-
-                    <div class="flex items-center my-6">
-                        <div class="flex-grow border-t" style="border-color: #666666;"></div>
-                        <span class="flex-shrink mx-4 text-gray-300">-- o --</span>
-                        <div class="flex-grow border-t" style="border-color: #666666;"></div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <!-- Botones de terceros (Plata CTA - Letras Negras) -->
-                        <button id="googleButton" 
-                                class="w-full font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out chrome-button">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_and_wordmark_of_Google_G_Suite.svg" alt="Google" class="w-5 h-5 mr-3 bg-white rounded-full">
-                            Google
-                        </button>
-                        <button id="facebookButton"
-                                class="w-full font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-150 ease-in-out chrome-button">
-                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" style="color: var(--text-on-silver);">
-                                <path d="M14.07,10.37h2.09l0.31-2.09h-2.4c-0.62,0-1.11-0.49-1.11-1.11v-1.42h3.42V3.41H12.9v1.94c-1.42,0-2.56,1.14-2.56,2.56v1.47h-2.09v2.09h2.09v6.52c0,0.61,0.5,1.11,1.11,1.11h3.42c0.61,0,1.11-0.5,1.11-1.11v-6.52h-2.09V10.37z"/>
-                            </svg>
-                            Facebook
-                        </button>
-                    </div>
-                    
-                    <!-- Botón Anónimo: Texto en color Plata Brillante para contraste -->
-                    <button id="anonymousButton" class="w-full text-sm hover:text-white mt-6 transition duration-150 ease-in-out" style="color: var(--silver-chrome);">
-                        Continuar como Anónimo (Acceso Rápido)
-                    </button>
-                </div>
-            `;
-            
-            // Asignar Event Listeners para la autenticación
-            document.getElementById('loginButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('login'); });
-            document.getElementById('createAccountButton').addEventListener('click', (e) => { e.preventDefault(); handleAuth('register'); });
-            document.getElementById('anonymousButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
-            document.getElementById('googleButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); }); 
-            document.getElementById('facebookButton').addEventListener('click', (e) => { e.preventDefault(); handleAnonymousLogin(); });
-        };
-        
-        const renderAppScreen = () => {
-            hideLoading();
-            updateHeaderButtons(true); // Mostrar Cerrar Sesión
-            const contentDiv = document.getElementById('content');
-            
-            contentDiv.innerHTML = `
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold mb-2" style="color: var(--silver-chrome);">WatchNow</h1>
-                    <p class="text-sm text-gray-300">Coleccionismo, Identificación y Comunidad</p>
-                </div>
-                
-                <div class="auth-card p-8 rounded-xl shadow-lg w-full max-w-sm">
-                    <p class="text-gray-200 mb-4 text-center">
-                        ID de Sesión: <span class="text-sm font-mono session-id">${userId || 'Cargando...'}</span>
-                    </p>
-
-                    <!-- Botón Principal: Escanear Reloj -->
-                    <div class="mb-8">
-                        <div class="text-4xl mx-auto w-16 h-16 flex items-center justify-center rounded-full cursor-pointer hover:opacity-80 transition duration-150"
-                             style="background-color: var(--rolex-green-light); border: 2px solid var(--silver-chrome); color: var(--silver-chrome);">
-                            <i data-lucide="camera" class="w-8 h-8 pointer-events-none"></i>
-                        </div>
-                        <button id="scanButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out mt-4 chrome-button">
-                            Escanear Reloj
-                        </button>
-                        <p class="text-xs mt-2" style="color: var(--secondary-accent);">
-                            La función de IA requiere una clave API configurada.
-                        </p>
-                    </div>
-
-                    <!-- Navegación de Opciones Adicionales -->
-                    <div class="space-y-4">
-                        <!-- Mi Colección -->
-                        <button id="collectionButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
-                            <i data-lucide="clock" class="w-5 h-5"></i>
-                            <span>Mi Colección</span>
-                        </button>
-
-                        <!-- Comunidad (Chat) -->
-                        <button id="communityButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
-                            <i data-lucide="message-square-text" class="w-5 h-5"></i>
-                            <span>Comunidad (Chat)</span>
-                        </button>
-
-                        <!-- Favoritos -->
-                        <button id="favoritesButton"
-                                class="w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out chrome-button flex items-center justify-center space-x-2">
-                            <i data-lucide="heart" class="w-5 h-5"></i>
-                            <span>Favoritos</span>
-                        </button>
-                        
-                    </div>
-                </div>
-            `;
-            
-            // Re-renderizar iconos después de cargar el HTML interno
-            lucide.createIcons();
-            
-            // Asignar Event Listeners
-            document.getElementById('scanButton').addEventListener('click', () => {
-                showMessageBox("Función de IA", "Se activaría el escáner de imagen para identificación.");
-            });
-            document.getElementById('collectionButton').addEventListener('click', window.openCollectionModal);
-            document.getElementById('communityButton').addEventListener('click', () => {
-                showMessageBox("Comunidad", "Esta sección permitiría chatear y compartir con otros coleccionistas.");
-            });
-            document.getElementById('favoritesButton').addEventListener('click', () => {
-                showMessageBox("Favoritos", "Esta sección mostraría los relojes que has marcado como tus favoritos.");
-            });
-        };
-
-        // --- Lógica de Autenticación (Manejando Email/Password) ---
-
-        const handleAuth = async (mode) => {
-            // Verificar si estamos en modo simulación (útil para GitHub Pages)
-            if (userId === 'SIMULADO') {
-                 showMessageBox("Advertencia de Simulación", "Estás en modo simulación. Usa 'Continuar como Anónimo' para probar la UI.");
+            if (!isAuthReady || !userId) {
+                 showMessageBox("Acceso Denegado", "Debes iniciar sesión para usar el escáner de IA.");
                  return;
             }
-            
-            const email = document.getElementById('emailInput').value;
-            const password = document.getElementById('passwordInput').value;
-            
-            if (!email || !password) {
-                showMessageBox("Error de Validación", "Por favor, introduce un correo electrónico y una contraseña.");
-                return;
-            }
+
+            showMessageBox("Analizando Reloj...", `<div class="loading-spinner mx-auto mb-3"></div> Enviando imagen a la IA para identificación. Por favor, espera...`);
 
             try {
-                if (mode === 'register') {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    showMessageBox("Registro Exitoso", "¡Tu cuenta ha sido creada y has iniciado sesión!");
-                } else {
-                    await signInWithEmailAndPassword(auth, email, password);
-                    showMessageBox("Inicio de Sesión Exitoso", "¡Bienvenido de vuelta!");
-                }
+                const base64Image = await fileToBase64(file);
+                await analyzeWatchImage(base64Image, file.type);
             } catch (error) {
-                console.error("Error de autenticación:", error);
-                showMessageBox("Error de Autenticación", `No se pudo ${mode === 'register' ? 'crear la cuenta' : 'iniciar sesión'}. Por favor, verifica tus credenciales. Mensaje: ${error.message}`);
+                closeMessageBox();
+                showMessageBox("Error de Procesamiento", `No se pudo procesar la imagen. Mensaje: ${error.message}`);
+                console.error("Error al procesar la imagen:", error);
             }
         };
         
-        // Lógica de Login Anónimo (para el botón "Continuar como Anónimo")
-        const handleAnonymousLogin = async () => {
-             // Si estamos en modo simulación, simplemente renderiza la pantalla de la App.
-            if (userId === 'SIMULADO') {
-                renderAppScreen();
+        /**
+         * Llama a la API de Google Gemini para analizar la imagen del reloj.
+         */
+        const analyzeWatchImage = async (base64Image, mimeType, retries = 0) => {
+            const userQuery = "Identifica la marca, modelo y año aproximado del reloj en esta imagen. Luego, proporciona una breve historia de ese modelo. Responde en español.";
+            
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: userQuery },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Image
+                                }
+                            }
+                        ]
+                    }
+                ],
+            };
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.status === 429 && retries < MAX_RETRIES) {
+                    const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return analyzeWatchImage(base64Image, mimeType, retries + 1); // Reintentar
+                } else if (response.ok) {
+                    const result = await response.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo obtener una respuesta del modelo.";
+                    
+                    closeMessageBox(); 
+                    showScanResultModal(formatMarkdownToHtml(text));
+                    return; 
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(`Error HTTP: ${response.status}. Mensaje: ${errorData.error?.message || 'Error desconocido'}`);
+                }
+            } catch (error) {
+                closeMessageBox();
+                showMessageBox("Error de IA", `No se pudo contactar a la API de Gemini. Mensaje: ${error.message}`);
+                console.error("Error en la llamada a la API de Gemini:", error);
                 return;
             }
+        };
+
+        /** Simulación de parseo de Markdown a HTML simple */
+        function formatMarkdownToHtml(markdownText) {
+            let html = markdownText;
             
+            html = html.replace(/^##\s*(.*)$/gm, '<h3 class="text-xl font-bold mt-4 mb-2" style="color: var(--silver-chrome);">$1</h3>');
+            html = html.replace(/^\#\s*(.*)$/gm, '<h4 class="text-lg font-bold mt-3 mb-1" style="color: var(--silver-chrome);">$1</h4>');
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Reemplazar listas
+            html = html.replace(/(\n|^)\s*[\*\-]\s*(.*)/g, '<li>$2</li>');
+            html = html.replace(/<\/li>\n<li>/g, '</li><li>');
+            html = html.replace(/<li>(.*?)(<h|<p|$)/g, '<ul><li>$1</li></ul>$2');
+
+            // Limpieza de párrafos/saltos de línea
+            html = html.replace(/\n\s*\n/g, '</p><p>');
+            html = html.replace(/<p><\/p>/g, ''); 
+            
+            if (!html.startsWith('<p>') && !html.startsWith('<h') && !html.startsWith('<ul')) {
+                html = '<p>' + html + '</p>';
+            }
+
+            return html.trim().replace(/\n/g, '<br>');
+        }
+
+
+        // --- Lógica de Autenticación y Cierre de Sesión ---
+
+        const handleAnonymousLogin = async () => {
             try {
                 if (isAuthReady && userId) {
                      renderAppScreen();
@@ -534,20 +488,16 @@
                 }
             } catch (error) {
                 console.error("Error al iniciar sesión anónimamente:", error);
-                showMessageBox("Error de Login", `No se pudo continuar como anónimo. Mensaje: ${error.message}`);
+                showMessageBox("Error de Login", `No se pudo iniciar sesión. Mensaje: ${error.message}`);
             }
         };
 
-        const handleLogout = async () => {
-            // No intentar cerrar sesión si estamos en modo simulación (simplemente redirige al login)
-            if (userId === 'SIMULADO') {
-                userId = null;
-                renderLoginScreen();
-                return;
-            }
-            
+        window.handleLogout = async () => {
             try {
                 await signOut(auth);
+                userId = null;
+                isAuthReady = false;
+                renderLoginScreen();
             } catch (error) {
                 console.error("Error al cerrar sesión:", error);
                 showMessageBox("Error de Cierre de Sesión", `No se pudo cerrar la sesión. Mensaje: ${error.message}`);
@@ -555,79 +505,145 @@
         };
 
 
-        // --- Inicialización de Firebase y Autenticación (Punto de Conexión) ---
+        // --- Renderizado de Vistas ---
 
-        const initializeAppAndAuth = async () => {
+        const renderLoginScreen = () => {
+            document.getElementById('loadingScreen')?.remove();
+            updateHeaderButtons(false);
+            const contentDiv = document.getElementById('content');
             
-            // Asignar listener de cerrar sesión al botón del header
-            const logoutButton = document.getElementById('logoutButtonHeader');
-            if(logoutButton) logoutButton.addEventListener('click', handleLogout);
-            
-            try {
-                // Verificar si la configuración de Firebase está vacía o es inválida
-                const isFirebaseConfigInvalid = Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId;
-                
-                if (isFirebaseConfigInvalid) {
-                     // --- MODO SIMULACIÓN ---
-                    auth = { currentUser: null, signOut: () => console.log('Simulated signOut'), onAuthStateChanged: (cb) => { 
-                         // Simula un cambio de estado inicial para que la lógica de renderizado se ejecute
-                         setTimeout(() => cb(null), 0); 
-                    }};
-                    isAuthReady = true;
-                    userId = 'SIMULADO';
-                    renderLoginScreen();
-                    showMessageBox("Advertencia", "Firebase no está configurado. La aplicación está en **MODO SIMULACIÓN**. Usa 'Continuar como Anónimo' para probar la navegación y el modal de Colección.");
-                    return; 
-                }
-                
-                // --- MODO PRODUCCIÓN (Canvas) ---
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // 1. Manejar el estado de autenticación: Redirige a la pantalla correcta
-                onAuthStateChanged(auth, (user) => {
-                    isAuthReady = true;
-                    if (user) {
-                        userId = user.uid;
-                        console.log("Usuario autenticado. UID:", userId);
-                        saveExampleData();
-                        renderAppScreen();
-                    } else {
-                        userId = null;
-                        console.log("Usuario deslogueado.");
-                        renderLoginScreen();
-                    }
-                });
-
-                // 2. Intentar autenticar con el token de Canvas o de forma anónima
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    console.log("Autenticación con token de Canvas exitosa.");
-                } else {
-                    await signInAnonymously(auth);
-                    console.log("Autenticación anónima iniciada.");
-                }
-
-            } catch (error) {
-                console.error("Error Crítico de Configuración/Inicialización:", error);
-                const contentDiv = document.getElementById('content');
-                updateHeaderButtons(false);
-                contentDiv.innerHTML = `
-                    <div class="p-6 rounded-xl shadow-lg mt-8 text-white text-center" style="background-color: var(--secondary-accent);">
-                        <h2 class="text-xl font-bold mb-3" style="color: var(--silver-chrome);">Error de Conexión Crítico</h2>
-                        <p class="mb-4">
-                            La aplicación no pudo inicializar Firebase. Revise el archivo '__firebase_config' es válido.
-                            Mensaje: ${error.message}
-                        </p>
-                    </div>
-                `;
-            }
+            contentDiv.innerHTML = `
+                <div class="app-card p-8 rounded-xl shadow-lg mt-8 text-center">
+                    <h2 class="text-4xl font-bold mb-2" style="color: var(--silver-chrome);">WatchNow</h2>
+                    <p class="text-gray-300 mb-8">Identificación y Coleccionismo de Relojes de Lujo.</p>
+                    
+                    <button onclick="handleAnonymousLogin()"
+                            class="chrome-button w-full font-bold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                        <i data-lucide="log-in" class="w-5 h-5 inline-block mr-2"></i> 
+                        Continuar como Anónimo
+                    </button>
+                    
+                    <p class="text-sm text-gray-400 mt-4">No se requiere registro, pero tu colección será privada.</p>
+                </div>
+            `;
+            lucide.createIcons();
         };
 
-        // Iniciar la aplicación al cargar la ventana
-        window.onload = initializeAppAndAuth;
-        
+        const renderAppScreen = () => {
+            document.getElementById('loadingScreen')?.remove();
+            updateHeaderButtons(true);
+            const contentDiv = document.getElementById('content');
+            
+            contentDiv.classList.remove('max-w-sm', 'sm:max-w-md'); // Permitir que la app tome más ancho
+            contentDiv.classList.add('max-w-4xl');
+
+            const watchContainerStyle = "min-height: 250px; background-color: var(--rolex-green-light); border: 2px solid var(--silver-chrome);";
+
+            contentDiv.innerHTML = `
+                <div class="app-card p-8 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold mb-6" style="color: var(--silver-chrome);">Bienvenido. ID: <span class="font-mono text-base text-gray-400 break-all">${userId}</span></h2>
+                    
+                    <!-- Sección de Acciones Principales -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        
+                        <!-- 1. Escanear Reloj (IA) -->
+                        <div class="p-4 rounded-lg text-center" style="${watchContainerStyle}">
+                            <i data-lucide="scan" class="w-8 h-8 mx-auto mb-2" style="color: var(--silver-chrome);"></i>
+                            <h3 class="font-semibold text-xl mb-3">Escanear Reloj (IA)</h3>
+                            <p class="text-sm text-gray-300 mb-4">Sube una foto para identificar la marca y el modelo.</p>
+                            <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
+                            <button onclick="document.getElementById('imageInput').click()" 
+                                    class="chrome-button py-2 px-4 rounded-lg text-sm w-full">
+                                Escanear Imagen
+                            </button>
+                        </div>
+                        
+                        <!-- 2. Mi Colección -->
+                        <div class="p-4 rounded-lg text-center" style="${watchContainerStyle}">
+                            <i data-lucide="archive" class="w-8 h-8 mx-auto mb-2" style="color: var(--silver-chrome);"></i>
+                            <h3 class="font-semibold text-xl mb-3">Mi Colección</h3>
+                            <p class="text-sm text-gray-300 mb-4">Añade, edita y gestiona tus relojes guardados.</p>
+                            <button onclick="openCollectionModal()" 
+                                    class="chrome-button py-2 px-4 rounded-lg text-sm w-full">
+                                Añadir a Mi Colección
+                            </button>
+                        </div>
+
+                        <!-- 3. Comunidad (Simulado) -->
+                        <div class="p-4 rounded-lg text-center" style="${watchContainerStyle}">
+                            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2" style="color: var(--silver-chrome);"></i>
+                            <h3 class="font-semibold text-xl mb-3">Comunidad</h3>
+                            <p class="text-sm text-gray-300 mb-4">Comparte y visualiza colecciones de otros usuarios.</p>
+                            <button onclick="showMessageBox('Comunidad', 'Esta función está en desarrollo. ¡Pronto podrás interactuar con otros coleccionistas!')" 
+                                    class="chrome-button py-2 px-4 rounded-lg text-sm w-full">
+                                Ver Muro
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de Lista de Colección (Live Feed) -->
+                    <div class="mt-8 pt-4 border-t border-gray-600">
+                        <h3 class="text-2xl font-bold mb-4" style="color: var(--silver-chrome);">Mis Últimos Relojes</h3>
+                        <div id="collectionList" class="max-h-60 overflow-y-auto pr-2" style="background-color: var(--rolex-green-dark);">
+                            <p class="text-center text-sm text-gray-400 p-4">Cargando colección...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            // Iniciar el listener de la colección después de que el DOM esté listo
+            setupWatchListener(); 
+        };
+
+
+        // --- INICIALIZACIÓN DE FIREBASE Y AUTH ---
+        async function initApp() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                 // Si no hay configuración de Firebase, simular login anónimo para que la app sea usable
+                 userId = 'SIMULADO'; 
+                 isAuthReady = true;
+                 renderAppScreen();
+                 return;
+            }
+
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                // 1. Manejar Autenticación con Token Inicial o Anónimo
+                await new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            isAuthReady = true;
+                            renderAppScreen();
+                            resolve();
+                        } else {
+                            if (initialAuthToken) {
+                                // Usar el token si está disponible
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                // Sino, ir a la pantalla de Login para elegir Anónimo
+                                renderLoginScreen();
+                            }
+                            isAuthReady = true;
+                            resolve();
+                        }
+                        unsubscribe(); // Detener el listener después de la primera comprobación
+                    });
+                });
+                
+            } catch (error) {
+                console.error("Error al inicializar la aplicación:", error);
+                showMessageBox("Error Crítico", "No se pudo iniciar la plataforma. Revisa la consola para detalles.");
+                renderLoginScreen(); // Mostrar pantalla de login en caso de error grave
+            }
+        }
+
+        // Iniciar la aplicación cuando se cargue la ventana
+        window.onload = initApp;
+
     </script>
 </body>
 </html>
