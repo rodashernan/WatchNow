@@ -6,6 +6,8 @@
     <title>WatchNow - Plataforma de Coleccionistas</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome para iconos de proveedores sociales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* Fuente principal Inter */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -63,7 +65,7 @@
             <nav id="mainNav" class="flex justify-between items-center mt-4 card p-3 rounded-lg text-sm hidden">
                 <div class="flex space-x-4">
                     <button onclick="setView('analyze')" id="navAnalyze" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_analyze">Análisis IA</button>
-                    <button onclick="setView('community')" id="navCommunity" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_community">Comunidad</button>
+                    <button onclick="setView('community')" id="navCommunity" class="nav-link font-semibold border-b-2 border-transparent hover:border-gray-500 pb-1" data-key="nav_community">Comunidad/Mercado</button>
                 </div>
                 <div class="flex items-center space-x-3">
                     <span id="currentUserDisplay" class="text-gray-400 italic text-xs"></span>
@@ -86,7 +88,8 @@
         // 1. CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
         // ===============================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, 
+                 GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, setDoc, getDoc, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Habilitar logs de Firebase para depuración
@@ -96,60 +99,60 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // --- INICIO: FIX para Entorno Externo (GitHub Pages) ---
+        // --- INICIO: FIX para Entorno Externo y Manejo de `null` ---
         let firebaseConfig = {};
         const CRITICAL_ERROR_MESSAGE = "Error Crítico de Configuración: La aplicación no pudo inicializar Firebase. Revise la Consola (F12).";
 
-        if (typeof __firebase_config !== 'undefined') {
+        // **CORRECCIÓN CLAVE:** Aseguramos que la variable exista y no sea la cadena literal "null" antes de intentar parsear.
+        if (typeof __firebase_config !== 'undefined' && __firebase_config !== "null") {
             try {
-                firebaseConfig = JSON.parse(__firebase_config);
+                firebaseConfig = JSON.parse(__firebase_config); 
             } catch (e) {
                 console.error("ERROR: No se pudo parsear __firebase_config.", e);
             }
         } 
         
+        // Si la configuración sigue vacía, asumimos que estamos fuera del entorno Canvas (como GitHub Pages)
         if (Object.keys(firebaseConfig).length === 0) {
-            // Este bloque se ejecuta en Canvas si la configuración es nula/vacía, o fuera de Canvas (GitHub Pages).
+            console.warn("ADVERTENCIA: Usando configuración de Firebase vacía o de ejemplo.");
             
-            // Si estás fuera de Canvas (como en GitHub Pages), DEBES reemplazar el objeto vacío 
-            // con tu propia configuración de Firebase para que funcione el Catálogo/Chat.
-            // Por ejemplo:
-            /*
+            // SI ESTÁS EN GITHUB PAGES, DEBES REEMPLAZAR ESTE OBJETO VACÍO CON TU PROPIA CONFIGURACIÓN DE FIREBASE
+            // PARA QUE FUNCIONE EL CATÁLOGO Y EL CHAT.
+            // Para la autenticación social (Google/Facebook), también DEBES habilitar esos proveedores en la Consola de Firebase.
+            
             firebaseConfig = {
-              apiKey: "TU_API_KEY",
-              authDomain: "TU_AUTH_DOMAIN",
-              projectId: "TU_PROJECT_ID",
-              storageBucket: "TU_STORAGE_BUCKET",
-              messagingSenderId: "TU_MESSAGING_SENDER_ID",
-              appId: "TU_APP_ID"
+              apiKey: "TU_API_KEY_DE_FIREBASE", // <<<<<<< REEMPLAZAR
+              authDomain: "TU_AUTH_DOMAIN", // <<<<<<< REEMPLAZAR
+              projectId: "TU_PROJECT_ID", // <<<<<<< REEMPLAZAR
+              storageBucket: "TU_STORAGE_BUCKET", // <<<<<<< REEMPLAZAR
+              messagingSenderId: "TU_MESSAGING_SENDER_ID", // <<<<<<< REEMPLAZAR
+              appId: "TU_APP_ID" // <<<<<<< REEMPLAZAR
             };
-            */
             
-            // Advertencia si la configuración sigue vacía
-            if (Object.keys(firebaseConfig).length === 0) {
-                 console.warn("ADVERTENCIA: Usando configuración de Firebase vacía. El Catálogo y el Chat no funcionarán fuera del entorno Canvas.");
+            if (Object.keys(firebaseConfig).length === 0 || firebaseConfig.projectId.startsWith("TU_")) {
+                 console.warn("ADVERTENCIA: Configuración de Firebase incompleta. El Catálogo, Chat y Auth social no funcionarán.");
             }
         }
-        // --- FIN: FIX para Entorno Externo ---
+        // --- FIN: FIX para Entorno Externo y Manejo de `null` ---
 
         // Inicialización de Firebase
         let app, db, auth;
         try {
-            if (Object.keys(firebaseConfig).length === 0) {
-                // Forzar un error crítico si no tenemos configuración, excepto si estamos fuera de Canvas y 
-                // queremos evitar el bloqueo (aunque las funciones de Firebase fallarán, el resto de la app carga).
-                // En GitHub Pages, si no defines firebaseConfig, esta parte se salta, permitiendo que la app cargue.
-                if (typeof __firebase_config !== 'undefined' && JSON.parse(__firebase_config) === null) {
-                    throw new Error("Configuración de Firebase faltante.");
-                }
+            if (Object.keys(firebaseConfig).length === 0 || firebaseConfig.projectId.startsWith("TU_")) {
+                 // Si las claves de Firebase aún son las de ejemplo o están vacías, forzamos la vista de error.
+                 if (firebaseConfig.projectId.startsWith("TU_")) {
+                    throw new Error("Configuración de Firebase faltante. Reemplace los valores 'TU_...' para usar el Catálogo/Chat/Auth Social fuera de Canvas.");
+                 }
             }
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
         } catch (error) {
             console.error("Fallo crítico al inicializar Firebase:", error);
+            // Mostrar error crítico en la UI
             document.getElementById('appContainer').innerHTML = renderCriticalError(CRITICAL_ERROR_MESSAGE + " Mensaje: " + error.message);
-            throw error;
+            db = null;
+            auth = null;
         }
         
         // ===============================================
@@ -164,6 +167,7 @@
         let communityTab = 'catalog'; // 'catalog', 'chat'
         
         // API de Vision AI (Debe ser una clave con acceso a Vision AI)
+        // Usamos una clave de ejemplo; el usuario final debe tener una real.
         const API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
         const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
         
@@ -175,7 +179,7 @@
                 app_title: "WatchNow",
                 app_subtitle: "Identificación, Comunidad y Catálogo de Relojes",
                 loading_app: "Cargando aplicación...",
-                error_auth_fail: "Error Crítico de Autenticación. Por favor, revise la Consola (F12) o inténtelo de nuevo. Esto puede indicar un problema con la clave de seguridad inicial.",
+                error_auth_fail: "Error Crítico de Autenticación. Por favor, revise la Consola (F12).",
                 user_anon: "Anónimo",
                 error_403: "❌ ¡ERROR 403! Acceso Denegado. Verifique la clave de API.",
                 nav_analyze: "Análisis IA",
@@ -195,6 +199,8 @@
                 login_button: "Iniciar Sesión",
                 signup_button: "Crear Cuenta",
                 login_anon_button: "Continuar como Anónimo",
+                login_with_google: "Google",
+                login_with_facebook: "Facebook",
                 select_image_prompt: "Toca para seleccionar una imagen clara del reloj",
                 analyze_button: "Analizar Reloj y Buscar",
                 results_title: "Resultados del Análisis",
@@ -205,15 +211,13 @@
                 history_summary: "Resumen Histórico:",
                 catalog_title: "Catálogo de Relojes Comunitario",
                 catalog_prompt: "Explora la colección o usa el Análisis IA para identificar un reloj.",
-                chat_title: "Chat de Coleccionistas",
-                chat_placeholder: "Escribe un mensaje...",
                 send_button: "Enviar",
             },
             en: {
                 app_title: "WatchNow",
                 app_subtitle: "Watch Identification, Community, and Catalog",
                 loading_app: "Loading application...",
-                error_auth_fail: "Critical Authentication Error. Please check the Console (F12) or try again. This might indicate an issue with the initial security token.",
+                error_auth_fail: "Critical Authentication Error. Please check the Console (F12).",
                 user_anon: "Anonymous",
                 error_403: "❌ ERROR 403! Access Denied. Check API key.",
                 nav_analyze: "AI Analysis",
@@ -233,6 +237,8 @@
                 login_button: "Sign In",
                 signup_button: "Sign Up",
                 login_anon_button: "Continue Anonymously",
+                login_with_google: "Google",
+                login_with_facebook: "Facebook",
                 select_image_prompt: "Tap to select a clear watch image",
                 analyze_button: "Analyze Watch & Search",
                 results_title: "Analysis Results",
@@ -243,8 +249,6 @@
                 history_summary: "Historical Summary:",
                 catalog_title: "Community Watch Catalog",
                 catalog_prompt: "Explore the collection or use AI Analysis to identify a watch.",
-                chat_title: "Collectors Chat",
-                chat_placeholder: "Type a message...",
                 send_button: "Send",
             }
         };
@@ -264,7 +268,6 @@
             if (savedLang && translations[savedLang]) {
                 currentLang = savedLang;
             }
-            // NO llamamos a initAuth aquí, dejamos que onAuthStateChanged lo maneje
         });
 
         function applyTranslations() {
@@ -282,7 +285,6 @@
 
         async function attemptSignIn() {
             try {
-                // Solo intentamos iniciar sesión si Firebase fue inicializado con éxito (auth no es null)
                 if (!auth) return; 
 
                 if (initialAuthToken) {
@@ -294,43 +296,55 @@
                 }
             } catch (error) {
                 console.error("ERROR CRÍTICO: Fallo al intentar iniciar sesión con Firebase Auth.", error);
-                // No actualizamos la UI aquí, dejamos que onAuthStateChanged lo capture
             }
         }
         
-        onAuthStateChanged(auth, (user) => {
-            if (!isAuthReady) {
-                // PRIMER CHECKEO: Intentar iniciar sesión si aún no lo hemos hecho
-                isAuthReady = true; 
-                attemptSignIn();
-            }
-
-            if (user) {
-                userId = user.uid;
-                userName = user.displayName || (user.email ? user.email.split('@')[0] : T('user_anon'));
-                
-                if (currentView === 'loading' || currentView === 'auth') {
-                    currentView = 'analyze'; 
+        // Solo suscribirse a onAuthStateChanged si `auth` está disponible
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (!isAuthReady) {
+                    isAuthReady = true; 
+                    attemptSignIn();
                 }
-                
-                initializeCatalogData(); 
-            } else {
-                userId = null;
-                userName = null;
-                currentView = 'auth';
-            }
-            updateUI(); // Llamar a updateUI cuando el estado de auth cambia
-        }, (error) => {
-            // Manejar errores de onAuthStateChanged (raro, pero posible)
+
+                if (user) {
+                    userId = user.uid;
+                    // Usar displayName si existe, sino el email (recortado) o Anónimo
+                    let display = user.displayName;
+                    if (!display && user.email) {
+                        display = user.email.split('@')[0];
+                    } else if (!display) {
+                        display = T('user_anon');
+                    }
+                    userName = display;
+                    
+                    if (currentView === 'loading' || currentView === 'auth') {
+                        currentView = 'analyze'; 
+                    }
+                    
+                    initializeCatalogData(); 
+                } else {
+                    userId = null;
+                    userName = null;
+                    currentView = 'auth';
+                }
+                updateUI();
+            }, (error) => {
+                isAuthReady = true;
+                document.getElementById('appContainer').innerHTML = renderCriticalError(T('error_auth_fail') + " Detalles: " + error.message);
+                updateUI();
+            });
+        } else {
             isAuthReady = true;
-            document.getElementById('appContainer').innerHTML = renderCriticalError(error.message);
-            updateUI();
-        });
+            currentView = 'auth';
+            document.addEventListener('DOMContentLoaded', updateUI);
+        }
         
-        window.handleSignOut = async () => { await signOut(auth); };
-        window.handleAnonSignIn = async () => { await signInAnonymously(auth); };
+        window.handleSignOut = async () => { if (auth) await signOut(auth); };
+        window.handleAnonSignIn = async () => { if (auth) await signInAnonymously(auth); };
         
         window.handleSignIn = async (email, password) => {
+            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 document.getElementById('authError').textContent = ''; 
@@ -340,6 +354,7 @@
         };
 
         window.handleSignUp = async (email, password) => {
+            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: email.split('@')[0] });
@@ -348,6 +363,32 @@
                 document.getElementById('authError').textContent = T('error_auth');
             }
         };
+        
+        // --- Autenticación con Proveedores Sociales ---
+
+        window.handleGoogleSignIn = async () => {
+            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Error al iniciar sesión con Google:", error);
+                document.getElementById('authError').textContent = T('error_auth') + " (Google).";
+            }
+        };
+
+        window.handleFacebookSignIn = async () => {
+            if (!auth) { document.getElementById('authError').textContent = T('error_auth'); return; }
+            const provider = new FacebookAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                // El error 12000 es común si no está configurado correctamente el dominio en Firebase/Facebook Developer
+                console.error("Error al iniciar sesión con Facebook:", error);
+                document.getElementById('authError').textContent = T('error_auth') + " (Facebook). Asegúrese de haber configurado el App Domain en Facebook Developers.";
+            }
+        };
+
 
         // ===============================================
         // 5. LÓGICA DE FIREBASE FIRESTORE (CATÁLOGO Y CHAT)
@@ -362,7 +403,7 @@
 
         function setupCatalogListener() {
             if (unsubscribeCatalog) unsubscribeCatalog();
-            if (!userId || !db) return; // Añadir chequeo de 'db'
+            if (!userId || !db) return; 
 
             const q = collection(db, CATALOG_COLLECTION_PATH);
             
@@ -378,7 +419,7 @@
 
         function setupChatListener() {
             if (unsubscribeChat) unsubscribeChat();
-            if (!userId || !db) return; // Añadir chequeo de 'db'
+            if (!userId || !db) return; 
 
             const chatContainer = document.getElementById('chatMessages');
             if (!chatContainer) return;
@@ -388,7 +429,7 @@
             
             unsubscribeChat = onSnapshot(q, (snapshot) => {
                 let messages = snapshot.docs.map(doc => doc.data());
-                // Ordenar en memoria por timestamp (descendente para el chat, si es posible)
+                // Ordenar en memoria por timestamp (ascendente para el chat)
                 messages.sort((a, b) => (a.timestamp && b.timestamp) ? a.timestamp.seconds - b.timestamp.seconds : 0);
                 renderChatMessages(messages);
             }, (error) => {
@@ -403,7 +444,10 @@
             const chatInput = document.getElementById('chatInput');
             const messageText = chatInput.value.trim();
 
-            if (!messageText || !userId || !db) return; // Añadir chequeo de 'db'
+            if (!messageText || !userId || !db) {
+                console.warn("No se puede enviar mensaje: texto vacío, usuario no autenticado o DB no inicializada.");
+                return; 
+            }
 
             try {
                 await addDoc(collection(db, CHAT_COLLECTION_PATH), {
@@ -531,6 +575,7 @@
         
         // ... (El resto de la lógica de Rendering y Templates) ...
         window.setView = (view) => {
+            if (!isAuthReady) return; 
             if ((view === 'analyze' || view === 'community') && !userId) view = 'auth';
             currentView = view;
             updateUI();
@@ -566,11 +611,12 @@
         }
 
         function renderCriticalError(message) {
+             currentView = 'error'; 
              return `
                 <div class="text-center py-10 card p-6 rounded-xl bg-red-900 border-red-700">
                     <h2 class="text-xl font-bold text-red-400 mb-2">Error de Configuración Crítico</h2>
                     <p class="text-sm text-red-300">${message}</p>
-                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Si estás en GitHub Pages, debes inyectar tu propia 'firebaseConfig' en el código fuente para el Catálogo y Chat. Si estás en Canvas, revisa tu 'firebase_config' en las variables de entorno.**</p>
+                    <p class="text-xs text-red-100 mt-4">**SOLUCIÓN: Si estás en un entorno externo (como GitHub Pages), DEBES reemplazar los valores 'TU_...' en la sección de código JavaScript con tu propia configuración de Firebase. Además, debes habilitar Google y Facebook Auth en la Consola de Firebase.**</p>
                 </div>
             `;
         }
@@ -581,13 +627,12 @@
             const currentUserDisplay = document.getElementById('currentUserDisplay');
 
             if (!isAuthReady || currentView === 'loading') {
-                // Si la autenticación aún está pendiente, mostramos el cargando
                 appContainer.innerHTML = `<div class="text-center py-10 text-gray-500" data-key="loading_app">${T('loading_app')}</div>`;
                 return;
             }
             
-            // Si hay un error crítico (ya renderizado por renderCriticalError), no hacemos nada más
-            if (appContainer.innerHTML.includes("Error de Configuración Crítico") || appContainer.innerHTML.includes("Error de Autenticación Crítico")) return;
+            if (currentView === 'error') return;
+
 
             if (userId) {
                 mainNav.classList.remove('hidden');
@@ -650,6 +695,19 @@
                         <div class="space-y-3">
                             <button type="button" onclick="handleSignIn(document.getElementById('email').value, document.getElementById('password').value)" class="w-full btn-primary text-white font-semibold py-2 rounded-lg" data-key="login_button">Iniciar Sesión</button>
                             <button type="button" onclick="handleSignUp(document.getElementById('email').value, document.getElementById('password').value)" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 rounded-lg transition duration-150" data-key="signup_button">Crear Cuenta</button>
+                            
+                            <div class="text-center text-sm text-gray-500 my-4">-- O --</div>
+
+                            <!-- Botones de Autenticación Social -->
+                            <button type="button" onclick="handleGoogleSignIn()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-semibold py-2 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
+                                <i class="fab fa-google"></i>
+                                <span data-key="login_with_google">Google</span>
+                            </button>
+                            <button type="button" onclick="handleFacebookSignIn()" class="w-full bg-[#1877F2] hover:bg-[#156cd4] text-white font-semibold py-2 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
+                                <i class="fab fa-facebook-f"></i>
+                                <span data-key="login_with_facebook">Facebook</span>
+                            </button>
+                            
                             <button type="button" onclick="handleAnonSignIn()" class="w-full text-gray-400 hover:text-white text-sm py-2" data-key="login_anon_button">Continuar como Anónimo</button>
                         </div>
                     </form>
@@ -822,10 +880,8 @@
                 { id: "garmin fenix", name: "Garmin Fēnix Series (Reloj Deportivo)", caliber: "Digital / GPS", price: "USD 400 - 1,200", history: "Un reloj multideporte de alta gama, conocido por sus avanzadas funciones de GPS, seguimiento de actividad, mapas topográficos y larga duración de batería. Popular entre corredores y excursionistas.", imageUrl: "https://placehold.co/80x80/0d1117/30363d?text=GRMN" }
             ];
 
-            // Si db es nulo (porque firebaseConfig estaba vacío), no podemos inicializar la data.
             if (!db) {
                 console.warn("No se pudo inicializar la data de catálogo: Firebase no está disponible.");
-                // Usar datos mockeados en memoria para que al menos la vista se renderice
                 catalogData = MOCK_CATALOG;
                 if (currentView === 'community' && communityTab === 'catalog') {
                     renderCatalog();
