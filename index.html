@@ -124,9 +124,8 @@
 
     <!-- Script de Firebase (para futura base de datos) y Lógica de IA -->
     <script>
-        // ⚠️ CRÍTICO: ESTA ES SU CLAVE DE API REAL.
-        // La clave es funcional si los servicios de Google Cloud Vision están activados en su proyecto.
-        const API_KEY = "AIzaSyDThBtWDnvq75tRmkOXtFhEZNGgkdT_XMI"; 
+        // ⚠️ CLAVE DE API ACTUALIZADA. ESTE ERA EL ÚLTIMO PASO CRÍTICO.
+        const API_KEY = "AIzaSyBZWXlVb7dfTwoMa2z_RhdtUkz5ZQ4mLQk"; 
         const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
 
         const fileInput = document.getElementById('fileInput');
@@ -213,7 +212,7 @@
                     const errorMessage = errorData.error?.message || "Error desconocido de la API.";
                     
                     if (errorMessage.includes("API key not valid")) {
-                        displayStatus("Error Crítico: Clave de API Inválida. Reemplace la clave en el código.", 'text-red-500 font-bold');
+                        displayStatus("Error Crítico: Clave de API Inválida. Verifique que la clave es correcta y que la Vision API está habilitada.", 'text-red-500 font-bold');
                     } else if (errorMessage.includes("API has not been used in project")) {
                         displayStatus("Error Crítico: Vision API No Activada. Active el servicio en Google Cloud.", 'text-red-500 font-bold');
                     } else {
