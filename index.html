@@ -192,140 +192,96 @@
 // === ZONA CRÍTICA: CONFIGURACIÓN DE CLAVES (COPIA TODO ESTO) =====
 // =================================================================
 // 1. App ID: Copia el 'appId' que obtuviste de Firebase.
-const __app_id = '1:12164521308:web:b12ef458fab9d1a7c6b599'; // <-- ¡REEMPLAZA AQUÍ!
+// =================================================================
+// === ZONA CRÍTICA: CONFIGURACIÓN DE CLAVES (TUS VALORES REALES) ===
+// === ESTE BLOQUE YA CONTIENE LOS DATOS DE TU ÚLTIMA CAPTURA ===
+// =================================================================
+// 1. App ID: Copia el 'appId' que obtuviste de Firebase.
+const __app_id = '1:12164521308:web:b12ef458fab9d1a7c6b599'; 
 
 // 2. CONFIGURACIÓN DE FIREBASE: Pega tu objeto firebaseConfig real aquí.
-// DEBES DEJAR EL JSON.stringify y las comillas dobles.
 const __firebase_config = JSON.stringify({
-    "apiKey": "AIzaSyDFawZ2pQOx9pCOvTYV35rpKI_0veTDWMk", // <-- ¡REEMPLAZA AQUÍ!
-    "authDomain": "watch-now-54d2e.firebaseapp.com", // <-- ¡REEMPLAZA AQUÍ!
-    "projectId": "watch-now-54d2e", // <-- ¡REEMPLAZA AQUÍ!
-    "storageBucket": "watch-now-54d2e.firebasestorage.app", // <-- ¡REEMPLAZA AQUÍ!
-    "messagingSenderId": "T12164521308", // <-- ¡REEMPLAZA AQUÍ!
-    "appId": "1:12164521308:web:b12ef458fab9d1a7c6b599" // <-- ¡REEMPLAZA AQUÍ! (Mismo valor que el punto 1)
+    "apiKey": "AIzaSyDfawZ2pQ0x9pCOVTYV35rpKI_0VeTDWMK", 
+    "authDomain": "watch-now-54d2e.firebaseapp.com", 
+    "projectId": "watch-now-54d2e", 
+    "storageBucket": "watch-now-54d2e.firebasestorage.app", 
+    "messagingSenderId": "T12164521308", 
+    "appId": "1:12164521308:web:b12ef458fab9d1a7c6b599" 
 });
 
-const __initial_auth_token = ""; // DEJAR ESTO ASÍ
+const __initial_auth_token = ""; 
 
 // 3. LLAVE DE GEMINI: Pega aquí tu LLAVE de Google AI Studio. 
-const GEMINI_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; // <-- ¡REEMPLAZA AQUÍ!
+const GEMINI_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnwDr81EHQDRcpw"; 
 // =================================================================
 
+
+// =================================================================
+// === IMPORTS Y DECLARACIONES GLOBALES (SOLO UN BLOQUE) ===========
+// =================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-// ... (El resto del código JavaScript sigue aquí)
 
-        // =================================================================
+let app, db, auth;
+let currentUser = null;
+let currentWatchData = null;
+
+// Convertir la configuración de string JSON a objeto JavaScript
+const firebaseConfig = JSON.parse(__firebase_config);
+
+// =================================================================
+// === INICIALIZACIÓN DE LA APLICACIÓN (CÓDIGO FUNCIONAL) ==========
+// =================================================================
+async function initApp() {
+    try {
+        setLogLevel('debug');
         
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // 1. Inicializar la App de Firebase
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
 
-        let app, auth, db;
-        let currentUser = null;
-        let currentWatchData = null;
-
-        // --- FUNCIONES DE UTILIDAD ---
-        // Manejo de Modales (Reemplazo de alert/confirm)
-        function showModal(title, msg, isConfirmable = false, callback = null) {
-            const modal = document.getElementById('modal');
-            const modalTitle = document.getElementById('modal-title');
-            const modalMsg = document.getElementById('modal-msg');
-            const actionsDiv = document.getElementById('modal-actions');
-            const closeBtn = document.getElementById('modal-close-btn');
-
-            modalTitle.innerText = title;
-            modalMsg.innerHTML = msg;
-
-            // Limpiar botones de confirmación anteriores
-            let confirmBtn = document.getElementById('confirm-action-btn');
-            if (confirmBtn) confirmBtn.remove();
-
-            if (isConfirmable && callback) {
-                // Configuración para Confirmar
-                confirmBtn = document.createElement('button');
-                confirmBtn.id = 'confirm-action-btn';
-                confirmBtn.className = 'btn-chrome px-4 py-2 rounded text-red-700 font-bold';
-                confirmBtn.innerText = 'SÍ, ELIMINAR';
-                confirmBtn.onclick = () => {
-                    modal.classList.add('hidden');
-                    callback();
-                };
-                actionsDiv.insertBefore(confirmBtn, closeBtn); // Insertar antes del botón Cerrar
-                closeBtn.innerText = 'CANCELAR';
+        // 2. Usamos onAuthStateChanged para asegurarnos de que el usuario esté listo
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Usuario autenticado, ocultamos el loading
+                currentUser = user;
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                
+                const userIdDisplay = document.getElementById('user-id-display');
+                if (userIdDisplay) userIdDisplay.innerText = `ID de Usuario: ${user.uid}`;
+                
+                loadUserWatches();
+                loadCommunityWatches();
             } else {
-                closeBtn.innerText = 'CERRAR';
+                // Si la autenticación falla por alguna razón, forzamos anónimo
+                await signInAnonymously(auth);
             }
+        });
 
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            lucide.createIcons();
+        // 3. Autenticación Inicial CRÍTICA:
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token !== "") {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
         }
+        
+    } catch (error) {
+        // Esto se activa si las claves de FIREBASE están mal.
+        console.error("Error al inicializar la aplicación o autenticar:", error);
+        showModal("Error Crítico de Conexión", 
+                  `No se pudo iniciar la aplicación de Firebase. Revisa los valores en la ZONA CRÍTICA. <br><br>Detalles: ${error.message}`, 
+                  false);
+    }
+}
 
-        // --- INICIALIZACIÓN ---
-        async function init() {
-            try {
-                // --- CONFIGURACIÓN DE FIREBASE (USANDO VARIABLES DE ENTORNO) ---
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                let firebaseConfig = {};
-                if (typeof __firebase_config !== 'undefined') {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                }
-                
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                
-                // Verificar clave de Gemini
-                if (GEMINI_KEY === "") {
-                    showModal("Error de Configuración", "Falta la clave de Gemini. Por favor, edita la variable <code>GEMINI_KEY</code> en la línea 271 del código.");
-                    document.getElementById('loading-text').innerText = "Error: Clave Gemini ausente";
-                    return;
-                }
+window.onload = initApp;
 
-                document.getElementById('loading-text').innerText = "Autenticando usuario...";
-
-                // Promesa para manejar la autenticación inicial
-                const initialAuthPromise = new Promise(async (resolve) => {
-                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                    
-                    // Listener para capturar el estado final del usuario
-                    const unsubscribe = onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            currentUser = user;
-                            // Mostrar ID completo para facilitar el debug y uso del path en Firestore
-                            document.getElementById('user-id-display').innerText = user.uid;
-                            switchView('app');
-                            loadCollection();
-                            document.getElementById('btn-logout').classList.remove('hidden');
-                        } else {
-                            currentUser = null;
-                            switchView('login');
-                            document.getElementById('btn-logout').classList.add('hidden');
-                        }
-                        document.getElementById('view-loading').classList.add('hidden');
-                        unsubscribe(); // Detener el listener
-                        resolve();
-                    });
-
-                    // Intentar la autenticación con el token custom
-                    try {
-                        if (token) {
-                            await signInWithCustomToken(auth, token);
-                        } else {
-                            // Si no hay token, iniciamos de forma anónima para obtener un UID
-                            await signInAnonymously(auth);
-                        }
-                    } catch (authError) {
-                        console.error("Fallo la autenticación con token custom o anónima:", authError);
-                        // El onAuthStateChanged se encargará de llevar al usuario al login
-                    }
-                });
-
-                await initialAuthPromise;
-
-            } catch (e) {
+// =================================================================
+// === AQUI EMPIEZAN EL RESTO DE TUS FUNCIONES JAVASCRIPT ===
+// =================================================================
                 showModal("Error Crítico", e.message + "<br><br>Revisa la consola (F12) para más detalles.");
                 document.getElementById('loading-text').innerText = "Error crítico";
             }
@@ -590,3 +546,4 @@ import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnap
     </script>
 </body>
 </html>
+
