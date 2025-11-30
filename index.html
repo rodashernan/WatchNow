@@ -186,7 +186,36 @@
         </div>
     </div>
 
-    const GEMINI_KEY = "TU_CLAVE_DE_GEMINI_AI_STUDIO"; // o tu clave pegada
+    <!-- SCRIPTS DE FIREBASE Y LÓGICA DE APP -->
+    <script type="module">
+        // =================================================================
+// === ZONA CRÍTICA: CONFIGURACIÓN DE CLAVES (COPIA TODO ESTO) =====
+// =================================================================
+// 1. App ID: Copia el 'appId' que obtuviste de Firebase.
+const __app_id = '1:12164521308:web:b12ef458fab9d1a7c6b599'; // <-- ¡REEMPLAZA AQUÍ!
+
+// 2. CONFIGURACIÓN DE FIREBASE: Pega tu objeto firebaseConfig real aquí.
+// DEBES DEJAR EL JSON.stringify y las comillas dobles.
+const __firebase_config = JSON.stringify({
+    "apiKey": "AIzaSyDFawZ2pQOx9pCOvTYV35rpKI_0veTDWMk", // <-- ¡REEMPLAZA AQUÍ!
+    "authDomain": "watch-now-54d2e.firebaseapp.com", // <-- ¡REEMPLAZA AQUÍ!
+    "projectId": "watch-now-54d2e", // <-- ¡REEMPLAZA AQUÍ!
+    "storageBucket": "watch-now-54d2e.firebasestorage.app", // <-- ¡REEMPLAZA AQUÍ!
+    "messagingSenderId": "T12164521308", // <-- ¡REEMPLAZA AQUÍ!
+    "appId": "1:12164521308:web:b12ef458fab9d1a7c6b599" // <-- ¡REEMPLAZA AQUÍ! (Mismo valor que el punto 1)
+});
+
+const __initial_auth_token = ""; // DEJAR ESTO ASÍ
+
+// 3. LLAVE DE GEMINI: Pega aquí tu LLAVE de Google AI Studio. 
+const GEMINI_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; // <-- ¡REEMPLAZA AQUÍ!
+// =================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// ... (El resto del código JavaScript sigue aquí)
+
         // =================================================================
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
