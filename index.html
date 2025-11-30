@@ -197,6 +197,11 @@
 // === ESTE BLOQUE YA CONTIENE LOS DATOS DE TU ÚLTIMA CAPTURA ===
 // =================================================================
 // 1. App ID: Copia el 'appId' que obtuviste de Firebase.
+// =================================================================
+// === ZONA CRÍTICA: CONFIGURACIÓN DE CLAVES (TUS VALORES REALES) ===
+// === ESTE BLOQUE YA CONTIENE LOS DATOS DE TU ÚLTIMA CAPTURA ===
+// =================================================================
+// 1. App ID: Copia el 'appId' que obtuviste de Firebase.
 const __app_id = '1:12164521308:web:b12ef458fab9d1a7c6b599'; 
 
 // 2. CONFIGURACIÓN DE FIREBASE: Pega tu objeto firebaseConfig real aquí.
@@ -220,8 +225,8 @@ const GEMINI_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnwDr81EHQDRcpw";
 // === IMPORTS Y DECLARACIONES GLOBALES (SOLO UN BLOQUE) ===========
 // =================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 let app, db, auth;
 let currentUser = null;
@@ -231,7 +236,7 @@ let currentWatchData = null;
 const firebaseConfig = JSON.parse(__firebase_config);
 
 // =================================================================
-// === INICIALIZACIÓN DE LA APLICACIÓN (CÓDIGO FUNCIONAL) ==========
+// === INICIALIZACIÓN DE LA APLICACIÓN (CÓDIGO FINAL Y ROBUSTO) ====
 // =================================================================
 async function initApp() {
     try {
@@ -242,42 +247,12 @@ async function initApp() {
         db = getFirestore(app);
         auth = getAuth(app);
 
-        // 2. Usamos onAuthStateChanged para asegurarnos de que el usuario esté listo
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Usuario autenticado, ocultamos el loading
-                currentUser = user;
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                
-                const userIdDisplay = document.getElementById('user-id-display');
-                if (userIdDisplay) userIdDisplay.innerText = `ID de Usuario: ${user.uid}`;
-                
-                loadUserWatches();
-                loadCommunityWatches();
-            } else {
-                // Si la autenticación falla por alguna razón, forzamos anónimo
-                await signInAnonymously(auth);
-            }
-        });
-
-        // 3. Autenticación Inicial CRÍTICA:
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token !== "") {
-            await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-            await signInAnonymously(auth);
-        }
+        // 2. Realizar la Autenticación
+        let userCredential;
         
-    } catch (error) {
-        // Esto se activa si las claves de FIREBASE están mal.
-        console.error("Error al inicializar la aplicación o autenticar:", error);
-        showModal("Error Crítico de Conexión", 
-                  `No se pudo iniciar la aplicación de Firebase. Revisa los valores en la ZONA CRÍTICA. <br><br>Detalles: ${error.message}`, 
-                  false);
-    }
-}
-
-window.onload = initApp;
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token !== "") {
+            // Intentar con el token de Canvas
+            userCredential = await signInWithCustomToken(auth,
 
 // =================================================================
 // === AQUI EMPIEZAN EL RESTO DE TUS FUNCIONES JAVASCRIPT ===
@@ -546,4 +521,5 @@ window.onload = initApp;
     </script>
 </body>
 </html>
+
 
