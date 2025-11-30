@@ -227,10 +227,11 @@ const GEMINI_API_KEY = "AIzaSyAF0oN8t9CRYx5uOsGmnWDr81EFHQDRcpw";
 
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+// Reordenamos las funciones de auth para asegurar que todas estén presentes
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+// Reordenamos las funciones de firestore
 import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-// Importación de Gemini (Se asume que tienes esta línea en tu código)
-// Si no la tienes, simplemente ignora esta línea.
+// Importación de Gemini 
 import { GoogleGenerativeAI } from "https://cdn.jsdelivr.net/npm/@google/generative-ai@0.1.0/dist/gemini.min.js";
 
 
@@ -257,6 +258,12 @@ function showMessageBox(title, message, callback) {
     // Implementación de modal o caja de mensaje personalizada
     console.error(`[${title}]: ${message}`);
     // Aquí iría el código para mostrar tu modal...
+    // Como no tenemos el código completo, simularemos la llamada.
+    const messageElement = document.getElementById('message-box-content');
+    if (messageElement) {
+        messageElement.innerHTML = `<strong>${title}</strong>: ${message}`;
+        document.getElementById('message-box').classList.remove('hidden');
+    }
 }
 
 function renderAppScreen() {
@@ -280,45 +287,41 @@ async function initApp() {
         db = getFirestore(app);
         auth = getAuth(app);
         
-        // 2. Inicializar Gemini
-        // **ESTA ES LA LÍNEA CRÍTICA**
-        // ai = new GoogleGenerativeAI(GEMINI_API_KEY); // <--- LA HE COMENTADO TEMPORALMENTE
+        // 2. Inicializar Gemini (Aún Comentado para la prueba)
+        // ai = new GoogleGenerativeAI(GEMINI_API_KEY); 
 
-        // 3. Configurar Observador de Autenticación
-        // Esta función espera a que Firebase decida si el usuario está logueado o no.
-        const authPromise = new Promise((resolve) => {
-            const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    isAuthReady = true;
-                    renderAppScreen();
-                    resolve();
-                } else {
-                    // Si no hay usuario, intenta el login anónimo
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                }
-                unsubscribe(); // Detener el listener después de la primera comprobación
-            });
-        });
-        
-        await authPromise; // Espera a que el proceso de autenticación termine
+        // 3. Forzar Autenticación Anónima si no hay token de inicio de sesión
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+
+        // 4. Esperar al estado de autenticación
+        const user = auth.currentUser;
+        if (user) {
+            userId = user.uid;
+            isAuthReady = true;
+            // Si la inicialización fue exitosa, renderizamos la aplicación
+            renderAppScreen(); 
+        } else {
+            // Esto solo debería pasar si signInAnonymously falla
+            throw new Error("No se pudo establecer la sesión anónima.");
+        }
 
     } catch (error) {
-        console.error("Error Crítico al inicializar la aplicación:", error);
-        showMessageBox("Error Crítico", "No se pudo iniciar la plataforma. Revisa la consola para detalles.", renderLoginScreen);
+        console.error("Error Crítico al inicializar la aplicación (Revisa la consola):", error);
+        // Si hay un error, lo mostramos y forzamos la pantalla de error.
+        showMessageBox("Error de Inicio", `No se pudo iniciar Firebase. Revisa tus claves. Detalle: ${error.message}`, renderLoginScreen);
     }
 }
 
-// 4. Iniciar la aplicación cuando se cargue la ventana (Debes tener esta línea al final del archivo)
+// 4. Iniciar la aplicación cuando se cargue la ventana
 window.onload = initApp;
 
 // NOTA: El resto de tus funciones (updateUI, handleScan, etc.) deben estar debajo.
+// ... (resto de tus funciones, como updateUI y las de Firebase)
 </script>
-
 // ----------------------------------------------------
 
 // --- IMPORTACIONES DE FIREBASE ---
@@ -856,5 +859,6 @@ window.onload = initApp;
     </script>
 </body>
 </html>
+
 
 
