@@ -203,25 +203,218 @@
 
 
     <script type="module">
-        // CONFIGURACIÓN GLOBAL (AQUÍ DEBES PEGAR TUS CLAVES REALES)
+// CONFIGURACIÓN GLOBAL (AQUÍ DEBES PEGAR TUS CLAVES REALES)
 // ----------------------------------------------------
-// 1. App ID: Copia el 'appId' (el valor) que obtuviste de Firebase.
-// Ejemplo: '1:1234567890:web:abcdef123456'
+// 1. App ID: Copia el 'appId' (el valor que obtuviste de Firebase).
 const __app_id = '1:12164521388:web:b12ef458fab9d1a7c6b599'; 
+
 // 2. CONFIGURACIÓN DE FIREBASE: Pega tu objeto firebaseConfig real aquí.
 const __firebase_config = JSON.stringify({
-    apiKey: "AIzaSy0wZg22pQ0x9pC0VTfY35RpXI_0veTDWMK", 
-    authDomain: "watch-now-54d2e.firebaseapp.com", 
-    projectId: "watch-now-54d2e", 
-    storageBucket: "watch-now-54d2e.firebaseastorage.app", 
-    messagingSenderId: "12164521388", 
-    appId: "1:12164521388:web:b12ef458fab9d1a7c6b599" 
+    // CLAVE DE FIREBASE: (termina en K, según tu captura)
+    "apiKey": "AIzaSy0wZg22pQ0x9pC0VTfY35RpXI_0veTDWMK",
+    "authDomain": "watch-now-54d2e.firebaseapp.com",
+    "projectId": "watch-now-54d2e",
+    "storageBucket": "watch-now-54d2e.firebaseastorage.app",
+    "messagingSenderId": "12164521388",
+    "appId": "1:12164521388:web:b12ef458fab9d1a7c6b599"
 });
 
 const __initial_auth_token = ""; 
 
-// 3. LLAVE DE GEMINI: Pega aquí tu llave de API de Google AI Studio
-const GEMINI_API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw"; 
+// 3. LLAVE DE GEMINI: (termina en w, según tu captura)
+const GEMINI_API_KEY = "AIzaSyAF0oN8t9CRYx5uOsGmnWDr81EFHQDRcpw";
+// ----------------------------------------------------
+
+// --- IMPORTACIONES DE FIREBASE ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// Importación de Gemini (Se asume que tienes esta línea en tu código)
+// Si no la tienes, simplemente ignora esta línea.
+import { GoogleGenerativeAI } from "https://cdn.jsdelivr.net/npm/@google/generative-ai@0.1.0/dist/gemini.min.js";
+
+
+// --- VARIABLES GLOBALES DE FIREBASE / ESTADO ---
+let app;
+let db;
+let auth;
+let userId = null;
+let isAuthReady = false;
+let currentScreen = 'loading'; // Pantalla inicial
+let currentUser = null;
+let currentLanguage = 'es';
+let collectionData = [];
+let communityData = [];
+
+// --- VARIABLES GLOBALES DE GEMINI ---
+let ai = null; // Variable para la instancia de Gemini
+
+// --- Habilitar logs (Te ayudará a ver los errores en la consola del navegador) ---
+setLogLevel('Debug');
+
+// --- Funciones de Utilidad (Debes tener estas funciones en tu código) ---
+function showMessageBox(title, message, callback) {
+    // Implementación de modal o caja de mensaje personalizada
+    console.error(`[${title}]: ${message}`);
+    // Aquí iría el código para mostrar tu modal...
+}
+
+function renderAppScreen() {
+    // Esta función dibuja el menú principal (Escanear Reloj, Mi Colección, etc.)
+    currentScreen = 'app';
+    updateUI();
+}
+
+function renderLoginScreen() {
+    // Esta función dibuja la pantalla de login anónimo o el error
+    currentScreen = 'login';
+    updateUI();
+}
+
+// --- Functión de Inicialización de la Aplicación ---
+async function initApp() {
+    try {
+        // 1. Inicializar Firebase
+        const firebaseConfig = JSON.parse(__firebase_config);
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        // 2. Inicializar Gemini
+        // **ESTA ES LA LÍNEA CRÍTICA**
+        // ai = new GoogleGenerativeAI(GEMINI_API_KEY); // <--- LA HE COMENTADO TEMPORALMENTE
+
+        // 3. Configurar Observador de Autenticación
+        // Esta función espera a que Firebase decida si el usuario está logueado o no.
+        const authPromise = new Promise((resolve) => {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    renderAppScreen();
+                    resolve();
+                } else {
+                    // Si no hay usuario, intenta el login anónimo
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+                unsubscribe(); // Detener el listener después de la primera comprobación
+            });
+        });
+        
+        await authPromise; // Espera a que el proceso de autenticación termine
+
+    } catch (error) {
+        console.error("Error Crítico al inicializar la aplicación:", error);
+        showMessageBox("Error Crítico", "No se pudo iniciar la plataforma. Revisa la consola para detalles.", renderLoginScreen);
+    }
+}
+
+// 4. Iniciar la aplicación cuando se cargue la ventana (Debes tener esta línea al final del archivo)
+window.onload = initApp;
+
+// NOTA: El resto de tus funciones (updateUI, handleScan, etc.) deben estar debajo.
+</script>
+
+// ----------------------------------------------------
+
+// --- IMPORTACIONES DE FIREBASE ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// Importación de Gemini (Se asume que tienes esta línea en tu código)
+// Si no la tienes, simplemente ignora esta línea.
+import { GoogleGenerativeAI } from "https://cdn.jsdelivr.net/npm/@google/generative-ai@0.1.0/dist/gemini.min.js";
+
+
+// --- VARIABLES GLOBALES DE FIREBASE / ESTADO ---
+let app;
+let db;
+let auth;
+let userId = null;
+let isAuthReady = false;
+let currentScreen = 'loading'; // Pantalla inicial
+let currentUser = null;
+let currentLanguage = 'es';
+let collectionData = [];
+let communityData = [];
+
+// --- VARIABLES GLOBALES DE GEMINI ---
+let ai = null; // Variable para la instancia de Gemini
+
+// --- Habilitar logs (Te ayudará a ver los errores en la consola del navegador) ---
+setLogLevel('Debug');
+
+// --- Funciones de Utilidad (Debes tener estas funciones en tu código) ---
+function showMessageBox(title, message, callback) {
+    // Implementación de modal o caja de mensaje personalizada
+    console.error(`[${title}]: ${message}`);
+    // Aquí iría el código para mostrar tu modal...
+}
+
+function renderAppScreen() {
+    // Esta función dibuja el menú principal (Escanear Reloj, Mi Colección, etc.)
+    currentScreen = 'app';
+    updateUI();
+}
+
+function renderLoginScreen() {
+    // Esta función dibuja la pantalla de login anónimo o el error
+    currentScreen = 'login';
+    updateUI();
+}
+
+// --- Functión de Inicialización de la Aplicación ---
+async function initApp() {
+    try {
+        // 1. Inicializar Firebase
+        const firebaseConfig = JSON.parse(__firebase_config);
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        // 2. Inicializar Gemini
+        // **ESTA ES LA LÍNEA CRÍTICA**
+        // ai = new GoogleGenerativeAI(GEMINI_API_KEY); // <--- LA HE COMENTADO TEMPORALMENTE
+
+        // 3. Configurar Observador de Autenticación
+        // Esta función espera a que Firebase decida si el usuario está logueado o no.
+        const authPromise = new Promise((resolve) => {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    renderAppScreen();
+                    resolve();
+                } else {
+                    // Si no hay usuario, intenta el login anónimo
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token.length > 0) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+                unsubscribe(); // Detener el listener después de la primera comprobación
+            });
+        });
+        
+        await authPromise; // Espera a que el proceso de autenticación termine
+
+    } catch (error) {
+        console.error("Error Crítico al inicializar la aplicación:", error);
+        showMessageBox("Error Crítico", "No se pudo iniciar la plataforma. Revisa la consola para detalles.", renderLoginScreen);
+    }
+}
+
+// 4. Iniciar la aplicación cuando se cargue la ventana (Debes tener esta línea al final del archivo)
+window.onload = initApp;
+
+// NOTA: El resto de tus funciones (updateUI, handleScan, etc.) deben estar debajo.
+</script>
+
 // ----------------------------------------------------
         
         // Habilitar logs
@@ -663,4 +856,5 @@ const GEMINI_API_KEY = "AIzaSyAf0on8I9CRYx5uOsGmnWDr81EfHQDRcpw";
     </script>
 </body>
 </html>
+
 
